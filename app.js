@@ -59,19 +59,20 @@
     if (g) { if (Array.isArray(g)) g = { type: "topup", title: "Groceries", items: g };
       if (g.items.length) h += tickBox(d.id + ":grocery", "grocery", BAG + "Groceries" + (g.title ? '<span class="tb-sub">' + g.title + "</span>" : ""), g.items,
         g.type === "main" ? "Big shop done. Next week\u2019s sorted!" : "Shopping sorted. Nice one!"); }
-    if (d.nightBefore && d.nightBefore.length) h += '<div class="nightb"><strong>Tonight, for tomorrow\u2019s cook</strong>' + list(d.nightBefore, true, "nb:" + W.range + d.id) + "</div>";
+    if (d.nightBefore && d.nightBefore.length) h += tickBox("nb:" + W.range + d.id, "nightb", "Tonight, for tomorrow\u2019s cook", d.nightBefore, "Ready for tomorrow\u2019s cook. Nice!");
     var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b, null, d.id + "-b") + meal("Lunch", d.l, null, d.id + "-l") + meal("Dinner", d.d, d.dAlt, d.id + "-d") +
       '<div class="meal"><p class="slot">Snacks</p><p>' + W.snacks + "</p></div></section>";
     if (d.cook) {
       var done = cookComplete(d), open = !done || lsGet(ckey(d), "0") === "1";
       wasComplete[d.id] = done;
       var wrap = '<div class="cookwrap' + (open ? "" : " collapsed") + '" id="cook-sec">' +
-        (done ? '<button type="button" class="cookbar" id="cookbar" aria-expanded="' + open + '" aria-controls="cookbody"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="cb-t">Cook day done: ' + d.cook.make.length + ' recipes packed</span><span class="cb-a">' + (open ? "Hide" : "Tap to view") + "</span></button>" : "") +
+        (done ? '<button type="button" class="cookbar" id="cookbar" aria-expanded="' + open + '" aria-controls="cookbody"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="cb-t">Cook day done: ' + d.cook.make.length + ' recipes packed</span><span class="cb-a">' + (open ? "Hide" : "Tap to view") + "</span>" + CHEV + "</button>" : "") +
         '<div class="cookbody" id="cookbody"' + (open ? "" : " inert") + '><div class="rin">' + cookSection(d) + "</div></div></div>";
       h += wrap + meals;
     } else h += meals;
     $("today").innerHTML = h;
     $("today-title").textContent = (d.cook ? "Cook day · " : "") + dayName[d.id];
+    $("cal-btn").setAttribute("aria-label", "Open calendar, " + dayName[d.id] + " selected");
     restore(); tickTimers();
   }
 
@@ -221,28 +222,23 @@
   /* ---- Week overview ---- */
   var SLOTS = [["b", "Breakfast"], ["l", "Lunch"], ["d", "Dinner"]];
   function overview() {
-    var st = outState(), first = D[0], mon = new Date(+first.date.slice(0, 4), +first.date.slice(5, 7) - 1, +first.date.slice(8, 10));
-    while (mon.getDay() !== 1) mon.setDate(mon.getDate() - 1);
-    var byDate = {}; D.forEach(function (d) { byDate[d.date] = d; });
-    var h = '<p class="small muted">Tick a meal if you\u2019re eating out or have other plans, add a note, then press Submit.</p><div class="ov">';
-    for (var i = 0; i < 7; i++) {
-      var dt = new Date(mon); dt.setDate(mon.getDate() + i);
-      var key = dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2), d = byDate[key];
-      var title = dt.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
-      h += '<div class="ov-day"><h3>' + title + (d && d.cook ? ' <span class="tag">cook day</span>' : "") + "</h3>";
-      if (!d) { h += '<p class="muted small">Not in this week\u2019s plan.</p></div>'; continue; }
+    var st = outState();
+    var h = '<p class="small muted">Meals and portions for each day. Tick a meal if you\u2019re eating out or have other plans, add a note, then press Submit.</p><div class="ov">';
+    D.forEach(function (d) {
+      var title = parse(d.date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+      h += '<div class="ov-day"><h2 class="ov-h"><a href="#today/' + d.id + '" class="ov-daylink">' + title + "</a>" + (d.cook ? ' <span class="tag">cook day</span>' : "") + "</h2>";
       SLOTS.forEach(function (s) {
         var id = d[s[0]], ok = d.id + "-" + s[0], o = st[ok] || {}, m = id && M[id];
-        var refs = m ? m.uses.map(function (u) { return '<a href="#ref-c-' + u + '" data-ref="ref-c-' + u + '">' + short(u) + "</a> " + amt(u, m.qty && m.qty[u]); }) : [];
-        if (m && m.items.length && id !== "birthday") refs.unshift('<a href="#ref-m-' + id + '" data-ref="ref-m-' + id + '">How to assemble</a>');
+        var refs = m ? m.uses.map(function (u) { return '<a href="#recipes/c-' + u + '">' + short(u) + "</a> " + amt(u, m.qty && m.qty[u]); }) : [];
+        if (m && m.items.length && id !== "birthday") refs.unshift('<a href="#recipes/m-' + id + '">How to assemble</a>');
         h += '<div class="ov-slot' + (o.out ? " out" : "") + '"><p class="slot">' + s[1] + "</p>" +
-          '<p class="ov-meal">' + (o.out ? "<s>" : "") + (m ? m.name : '<span class="muted">Nothing planned</span>') + (o.out ? "</s>" : "") + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "") + "</p>" +
-          (refs.length ? '<p class="ov-refs">' + refs.join(" · ") + "</p>" : "") +
+          '<p class="ov-meal">' + (o.out ? "<s>" : "") + (m ? m.name : '<span class="muted">Nothing planned</span>') + (o.out ? "</s>" : "") + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "") + (o.out ? ' <span class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</span>" : "") + "</p>" +
+          (refs.length ? '<ul class="ov-refs">' + refs.map(function (r) { return "<li>" + r + "</li>"; }).join("") + "</ul>" : "") +
           '<label class="ov-out"><input type="checkbox" data-out="' + ok + '"' + (o.out ? " checked" : "") + "> Eating out / other plans</label>" +
           '<label class="ov-note"><span class="sr">Note for ' + title + " " + s[1] + '</span><input type="text" data-note="' + ok + '" value="' + esc(o.note) + '" placeholder="Note (optional)" maxlength="60"></label></div>';
       });
       h += "</div>";
-    }
+    });
     h += '</div><p><button type="button" class="btn" id="ov-submit">Submit changes</button></p><div id="ov-fallback" hidden><p class="small">Couldn\u2019t copy automatically. Select and copy this:</p><textarea id="ov-text" rows="3" readonly></textarea></div>';
     $("overview-body").innerHTML = h;
   }
@@ -259,19 +255,19 @@
     D.forEach(function (d) { SLOTS.forEach(function (s) { var o = st[d.id + "-" + s[0]]; if (o && o.out) parts.push(d.label + " " + names[s[0]] + " out" + (o.note ? " (" + o.note + ")" : "")); }); });
     var start = new Date(+D[0].date.slice(0, 4), +D[0].date.slice(5, 7) - 1, +D[0].date.slice(8, 10));
     var text = "Week of " + start.getDate() + " " + start.toLocaleDateString("en-AU", { month: "short" }) + " changes: " + (parts.length ? parts.join("; ") : "none");
-    overview(); render(cur); weekTable();
+    overview(); render(cur);
     var fb = function () { $("ov-fallback").hidden = false; var ta = $("ov-text"); ta.value = text; ta.focus(); ta.select(); toast("Saved. Copy the text below"); };
     if (navigator.clipboard && window.isSecureContext !== false) navigator.clipboard.writeText(text).then(function () { toast("Copied, paste this to Chef"); }, fb); else fb();
   });
 
   /* ---- Tickable reminder boxes ---- */
-  function tbk(id, i) { return "tb:" + W.range + ":" + id + ":" + i; }
+  function tbk(id, i) { return id.indexOf("nb:") === 0 ? id + "-" + i : "tb:" + W.range + ":" + id + ":" + i; }
   function tbAll(id, n) { for (var i = 0; i < n; i++) if (lsGet(tbk(id, i), "0") !== "1") return false; return true; }
   var TICK = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function tickBox(id, cls, title, items, msg) {
     var done = tbAll(id, items.length), open = !done || lsGet("tbopen:" + W.range + ":" + id, "0") === "1";
     return '<div class="tb ' + cls + (done ? " is-done" : "") + (open ? "" : " collapsed") + '" data-tb="' + id + '" data-n="' + items.length + '">' +
-      '<button type="button" class="tb-bar" aria-expanded="' + open + '"' + (done ? "" : " hidden") + ">" + TICK + '<span class="tb-msg">' + msg + '</span><span class="tb-a">' + (open ? "Hide" : "Show") + "</span></button>" +
+      '<button type="button" class="tb-bar" aria-expanded="' + open + '"' + (done ? "" : " hidden") + ">" + TICK + '<span class="tb-msg">' + msg + '</span><span class="tb-a">' + (open ? "Hide" : "Show") + "</span>" + CHEV + "</button>" +
       '<div class="tb-body"' + (open ? "" : " inert") + '><div class="rin"><strong class="tb-title">' + title + '</strong><ul class="check tb-list">' +
       items.map(function (t, i) { var on = lsGet(tbk(id, i), "0") === "1";
         return '<li><label><input type="checkbox" data-tbk="' + i + '"' + (on ? " checked" : "") + "><span>" + t + "</span></label></li>"; }).join("") +
@@ -349,94 +345,128 @@
 
   function staticParts() {
     $("days").innerHTML = D.map(function (d, i) {
-      return '<button type="button" data-i="' + i + '" aria-pressed="false"><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.cook ? '<i>cook</i>' : "") + "</button>";
+      return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.cook ? '<i>cook</i>' : "") + "</a>";
     }).join("");
-    $("days").onclick = function (e) {
-      var b = e.target.closest("button"); if (!b) return;
-      var i = +b.dataset.i; cur = i; render(i); history.replaceState(null, "", "#" + D[i].id);
-    };
-    weekTable();
   }
-  function weekTable() {
-    var st = outState();
-    $("week-table").innerHTML = "<table><thead><tr><th>Day</th><th>Lunch</th><th>Dinner</th></tr></thead><tbody>" + D.map(function (d) {
-      var cell = function (id, alt, ok) { var o = st[ok]; if (o && o.out) return '<span class="out-cell"><s>' + (id ? M[id].name : "Meal") + '</s> Out' + (o.note ? ": " + esc(o.note) : "") + "</span>";
-        if (!id) return '<span class="muted">—</span>'; var m = M[id];
-        return m.name + (alt ? " " + alt : "") + (m.uses.length ? '<br><span class="muted small">' + usesList(m).join("; ") + "</span>" : ""); };
-      return "<tr><th scope=\"row\">" + dayName[d.id] + (d.cook ? '<br><span class="muted small">cook</span>' : "") + "</th><td>" + cell(d.l, null, d.id + "-l") + "</td><td>" + cell(d.d, d.dAlt, d.id + "-d") + "</td></tr>";
-    }).join("") + "</tbody></table><p class=\"small muted\">Breakfast: overnight oats, except eggs on toast on Sun. These are suggestions; swap any meals.</p>";
+
+  /* ---- One expand/collapse pattern (Recipes library, repeat lists) ---- */
+  function cx(key, head, body, defOpen) {
+    var st = lsGet("cx:" + W.range + ":" + key, null), open = st === null ? !!defOpen : st === "1";
+    return '<div class="cx' + (open ? " open" : "") + '" id="cx-' + key + '" data-cx="' + key + '">' +
+      '<h3 class="cx-wrap"><button type="button" class="cx-h" aria-expanded="' + open + '" aria-controls="cxb-' + key + '">' + head + CHEV + "</button></h3>" +
+      '<div class="cx-b" id="cxb-' + key + '"' + (open ? "" : " inert") + '><div class="rin">' + body + "</div></div></div>";
   }
+  function cxOpen(el, open) {
+    el.classList.toggle("open", open);
+    el.querySelector(".cx-h").setAttribute("aria-expanded", open);
+    var b = el.querySelector(".cx-b"); if (open) b.removeAttribute("inert"); else b.setAttribute("inert", "");
+    lsSet("cx:" + W.range + ":" + el.dataset.cx, open ? "1" : "0");
+  }
+  document.addEventListener("click", function (e) {
+    var h = e.target.closest(".cx-h"); if (h) { var el = h.closest(".cx"); cxOpen(el, !el.classList.contains("open")); }
+    var ex = e.target.closest("#rx-all"); if (ex) { var any = !!document.querySelector("#all-recipes .cx:not(.open)");
+      [].forEach.call(document.querySelectorAll("#all-recipes .cx"), function (c) { cxOpen(c, any); }); ex.textContent = any ? "Collapse all" : "Expand all"; }
+  });
+  function repeatList(id) {
+    return Object.keys(W.repeat).map(function (g) { return '<h3 class="grp">' + g + "</h3>" + list(W.repeat[g], false); }).join("") +
+      '<p><button type="button" class="btn" data-copy="' + id + '">Copy list</button></p>';
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-copy]"); if (!b) return;
+    var t = b.closest(".rin").innerText.replace(/Copy list\s*$/, "").trim();
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { b.textContent = "Copied"; toast("Shopping list copied"); }, function () { toast("Couldn\u2019t copy. Select the list instead"); });
+  });
+
   function refParts() {
+    // Kitchen
     $("fridge").innerHTML = '<ul class="plain fridge">' + Object.keys(C).map(function (k) { var c = C[k];
       var p = c.portion;
-      return '<li><div class="fr-top"><span>' + c.name + '</span><span class="muted">' + dayName[c.made] + " → " + c.keeps + "</span></div>" +
+      return '<li><div class="fr-top"><a href="#recipes/c-' + k + '">' + c.name + '</a><span class="muted">' + dayName[c.made] + " → " + c.keeps + "</span></div>" +
         (p ? '<p class="fr-por">Batch ' + p.batch + " · " + p.n + " portions · " + (k === "eggs" ? "1 egg each" : amt(k, 1) + " each") + "</p>" : "") + "</li>"; }).join("") + "</ul>" +
       '<p class="small muted">Easiest: divide each batch into its portions (or containers) when packing, so each meal is just grab-and-go. Portions are the same for Jade and Matteo; Matteo adds a little extra rice, pasta or toast.</p>';
-    $("all-recipes").innerHTML = Object.keys(C).map(function (k) { return '<details id="ref-c-' + k + '"><summary>' + C[k].name + "</summary>" + recipe(k, false) + "</details>"; }).join("") +
-      Object.keys(M).filter(function (k) { return k !== "birthday"; }).map(function (k) { return '<details id="ref-m-' + k + '"><summary>' + M[k].name + "</summary>" + meal("Meal", k) + "</details>"; }).join("");
-    $("topup").innerHTML = tickBox("shop:topup", "grocery plainbox", "Buy this week", W.topup, "Top-ups bought. Nice one!");
     $("freezer").innerHTML = list(W.freezer, false);
-    $("repeat").innerHTML = Object.keys(W.repeat).map(function (g) { return "<h3 class=\"grp\">" + g + "</h3>" + list(W.repeat[g], false); }).join("");
+    var main = D.filter(function (d) { return d.grocery && !Array.isArray(d.grocery) && d.grocery.type === "main"; })[0];
+    $("topup").innerHTML = tickBox("shop:topup", "grocery plainbox", "Top-ups this week", W.topup, "Top-ups bought. Nice one!") +
+      (main ? tickBox(main.id + ":grocery", "grocery plainbox", main.grocery.title + ' <span class="tag">' + main.label + "</span>", main.grocery.items, "Big shop done. Next week\u2019s sorted!") : "") +
+      cx("repeat-k", '<span class="cx-t">Repeat this week: full shopping list</span>', repeatList("k"), false);
+    // Recipes
+    $("all-recipes").innerHTML = '<div class="rbar"><p class="small muted">Components are cooked on cook days; meals are 5-minute assemblies.</p><button type="button" class="linkbtn" id="rx-all">Expand all</button></div>' +
+      '<h2 class="grp">Components</h2>' + Object.keys(C).map(function (k) { var c = C[k];
+        return cx("c-" + k, '<span class="cx-t">' + c.name.replace(" (Pestle)", "") + (/\(Pestle\)/.test(c.name) ? ' <span class="tag p">Pestle</span>' : "") + '</span><span class="cx-m">Cook ' + dayName[c.made] + " · " + c.serves + "</span>", recipe(k, false).replace(/<h3>.*?<\/h3>/, ""), false); }).join("") +
+      '<h2 class="grp">Meals</h2>' + Object.keys(M).filter(function (k) { return k !== "birthday"; }).map(function (k) { var m = M[k];
+        return cx("m-" + k, '<span class="cx-t">' + m.name + (isPestle(k) ? ' <span class="tag p">Pestle</span>' : "") + '</span><span class="cx-m">' + (m.time || "") + "</span>", meal("Meal", k).replace(/<h3>.*?<\/h3>/, ""), false); }).join("");
+    // History
+    var base2 = location.pathname.indexOf("/weeks/") > -1 ? "../" : "";
+    $("weeklist").innerHTML = (window.WEEKS || []).map(function (w) {
+      var curWeek = w.start === D[0].date;
+      return '<li><a href="' + base2 + w.file + '#today"><b>' + w.range + "</b>" + (curWeek ? " (this week)" : "") + "<span>" + w.summary + "</span></a></li>"; }).join("");
+    $("repeat").innerHTML = cx("repeat-h", '<span class="cx-t">Repeat this week: full shopping list</span>', repeatList("h"), false);
     $("targets").textContent = W.targets + " All nutrition figures are estimates.";
   }
 
-  function pick() {
-    var h = location.hash.slice(1);
-    for (var i = 0; i < D.length; i++) if (D[i].id === h) return i;
+  function todayIdx() {
     var today;
     try { today = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
     catch (e) { var n = new Date(); today = n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2) + "-" + ("0" + n.getDate()).slice(-2); }
     for (var j = 0; j < D.length; j++) if (D[j].date === today) return j;
     return 0;
   }
+  function parse(s) { var p = s.split("-"); return new Date(+p[0], p[1] - 1, +p[2]); }
+
+  /* ---- Tabs + hash routing (#today, #today/wed, #week, #kitchen, #recipes/c-chicken, #history) ---- */
+  var TABS = ["today", "week", "kitchen", "recipes", "history"];
+  var dayChosen = false, rendered = false;
+  function route() {
+    var h = location.hash.slice(1), parts = h.split("/"), tab = parts[0], sub = parts[1];
+    for (var i = 0; i < D.length; i++) if (D[i].id === tab) { tab = "today"; sub = D[i].id; }   // legacy #wed
+    if (TABS.indexOf(tab) < 0) {
+      tab = lsGet("lasttab", "today"); if (TABS.indexOf(tab) < 0) tab = "today";
+    }
+    lsSet("lasttab", tab);
+    TABS.forEach(function (t) {
+      var v = $("v-" + t); if (v) v.hidden = t !== tab;
+      var b = document.querySelector('.tabbar a[data-tab="' + t + '"]'); if (b) { if (t === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
+    });
+    document.body.setAttribute("data-tab", tab);
+    if (tab === "today") {
+      var di = -1; if (sub) for (var k = 0; k < D.length; k++) if (D[k].id === sub) di = k;
+      if (di < 0) di = dayChosen ? cur : todayIdx();
+      if (di !== cur || !rendered) { cur = di; render(cur); rendered = true; }
+      dayChosen = true;
+      [].forEach.call(document.querySelectorAll("#days a"), function (a, j) { a.setAttribute("aria-current", j === cur ? "true" : "false"); });
+    }
+    if (tab === "recipes" && sub) {
+      var el = $("cx-" + sub);
+      if (el) { if (!el.classList.contains("open")) cxOpen(el, true); setTimeout(function () { el.scrollIntoView({ block: "start" }); el.querySelector(".cx-h").focus({ preventScroll: true }); }, 0); return; }
+    }
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", route);
+  render = (function (r) { return function (i) { r(i); [].forEach.call(document.querySelectorAll("#days a"), function (a, j) { a.setAttribute("aria-current", j === i ? "true" : "false"); }); }; })(render);
 
   staticParts(); refParts(); overview();
-  cur = pick();
-  render(cur);
+  cur = todayIdx();
+  route();
 
-  /* ---- Section shortcuts (left) ---- */
-  var SECTIONS = [["today-title","Today"],["overview","Week overview"],["week","Rest of the week"],["fridge","In the fridge"],["recipes","All recipes"],["shop","Shopping & freezer"]];
-  if ($("archive")) SECTIONS.push(["archive","Past weeks"]);
-  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function go(id) { if (id === "cook-sec" && $("cook-sec") && $("cook-sec").classList.contains("collapsed")) setCookOpen(true);
-    var el = $(id); if (!el) return; el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-    el.setAttribute("tabindex", "-1"); el.focus({ preventScroll: true }); }
-  function buildLinks() {
-    var sec = SECTIONS.slice(); if (D[cur].cook) sec.splice(1, 0, ["cook-sec", "Cook plan"]);
-    var links = sec.map(function (s) { return '<li><a href="#' + s[0] + '" data-go="' + s[0] + '">' + s[1] + "</a></li>"; }).join("");
-    $("jump-list").innerHTML = links; if ($("side-list")) $("side-list").innerHTML = links;
-  }
-  buildLinks(); var _render = render; render = function (i) { _render(i); buildLinks(); };
-  document.addEventListener("click", function (e) {
-    var a = e.target.closest("a[data-go]"); if (!a) return;
-    e.preventDefault(); closeAll(); go(a.dataset.go);
-  });
-
-  /* ---- Popovers ---- */
-  var pops = [["jump-btn","jump-pop"],["cal-btn","cal-pop"]], opener = null;
-  function closeAll(restore) {
-    pops.forEach(function (p) { var b = $(p[0]), el = $(p[1]); if (!el || el.hidden) return; el.hidden = true; b.setAttribute("aria-expanded", "false"); });
-    if (restore && opener) opener.focus(); opener = null;
-  }
-  function open(p) {
-    closeAll(); var b = $(p[0]), el = $(p[1]); el.hidden = false; b.setAttribute("aria-expanded", "true"); opener = b;
-    if (p[1] === "cal-pop") drawCal();
+  /* ---- Calendar popover ---- */
+  var opener = null;
+  function closeCal(restore) { var el = $("cal-pop"); if (el.hidden) return; el.hidden = true; $("cal-btn").setAttribute("aria-expanded", "false"); if (restore && opener) opener.focus(); opener = null; }
+  function openCal() {
+    var b = $("cal-btn"), el = $("cal-pop"); el.hidden = false; b.setAttribute("aria-expanded", "true"); opener = b; drawCal();
     var f = el.querySelector(".sel") || el.querySelector("button[data-day]") || el.querySelector("a, button:not([disabled])"); if (f) f.focus();
   }
-  pops.forEach(function (p) { var b = $(p[0]); if (b) b.onclick = function (e) { e.stopPropagation(); $(p[1]).hidden ? open(p) : closeAll(true); }; });
-  document.addEventListener("click", function (e) { if (!e.target.closest(".pop") && !e.target.closest(".icon-btn")) closeAll(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeAll(true); });
+  $("cal-btn").onclick = function (e) { e.stopPropagation(); $("cal-pop").hidden ? openCal() : closeCal(true); };
+  document.addEventListener("click", function (e) { if (!e.target.closest(".pop") && !e.target.closest("#cal-btn")) closeCal(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeCal(true); });
 
-  /* ---- Calendar ---- */
   var IDS = ["sun","mon","tue","wed","thu","fri","sat"];
   var base = location.pathname.indexOf("/weeks/") > -1 ? "../" : "";
   function iso(dt) { return dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2); }
-  function parse(s) { var p = s.split("-"); return new Date(+p[0], p[1] - 1, +p[2]); }
   var todayIso = (function () { try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); } catch (e) { return iso(new Date()); } })();
   var here = {}; D.forEach(function (d, i) { here[d.date] = i; });
   var other = {}; (window.WEEKS || []).forEach(function (w) {
     if (!w.start || !w.end) return; var a = parse(w.start), z = parse(w.end);
-    for (var t = new Date(a); t <= z; t.setDate(t.getDate() + 1)) { var k = iso(t); if (!(k in here)) other[k] = base + w.file + "#" + IDS[t.getDay()]; }
+    for (var t = new Date(a); t <= z; t.setDate(t.getDate() + 1)) { var k = iso(t); if (!(k in here)) other[k] = base + w.file + "#today/" + IDS[t.getDay()]; }
   });
   var view = parse(D[cur].date); view.setDate(1);
   function drawCal() {
@@ -444,11 +474,11 @@
     var lead = (first.getDay() + 6) % 7, sel = D[cur].date;
     var h = '<div class="cal-head"><button type="button" class="icon-btn sm" data-nav="-1" aria-label="Previous month">\u2039</button><b>' +
       first.toLocaleDateString("en-AU", { month: "long", year: "numeric" }) + '</b><button type="button" class="icon-btn sm" data-nav="1" aria-label="Next month">\u203a</button></div>' +
-      '<div class="cal-grid" role="grid">' + ["M","T","W","T","F","S","S"].map(function (x) { return '<span class="dow" aria-hidden="true">' + x + "</span>"; }).join("");
+      '<div class="cal-grid">' + ["M","T","W","T","F","S","S"].map(function (x) { return '<span class="dow" aria-hidden="true">' + x + "</span>"; }).join("");
     for (var i = 0; i < lead; i++) h += "<span></span>";
     for (var dd = 1; dd <= days; dd++) {
       var k = iso(new Date(y, m, dd)), label = new Date(y, m, dd).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
-      var cls = "day" + (k === todayIso ? " today" : ""), attrs = "";
+      var cls = "day" + (k === todayIso ? " today" : "");
       if (k in here) { var di = here[k]; cls += " plan" + (D[di].cook ? " cook" : "") + (k === sel ? " sel" : "");
         h += '<button type="button" class="' + cls + '" data-day="' + di + '" aria-label="' + label + (D[di].cook ? ", cook day" : "") + '"' + (k === todayIso ? ' aria-current="date"' : "") + (k === sel ? ' aria-pressed="true"' : "") + ">" + dd + "</button>"; }
       else if (k in other) h += '<a class="' + cls + ' past" href="' + other[k] + '" aria-label="' + label + ', past week">' + dd + "</a>";
@@ -461,11 +491,6 @@
     e.stopPropagation();
     var n = e.target.closest("[data-nav]"); if (n) { view.setMonth(view.getMonth() + +n.dataset.nav); drawCal(); $("cal").querySelector('[data-nav="' + n.dataset.nav + '"]').focus(); return; }
     var b = e.target.closest("[data-day]"); if (!b) return;
-    cur = +b.dataset.day; render(cur); history.replaceState(null, "", "#" + D[cur].id); closeAll(true); window.scrollTo(0, 0);
+    closeCal(true); location.hash = "#today/" + D[+b.dataset.day].id;
   });
-  var cp = $("copy");
-  if (cp) cp.onclick = function () {
-    var t = $("repeat").innerText;
-    if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { cp.textContent = "Copied"; });
-  };
 })();

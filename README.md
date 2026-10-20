@@ -50,3 +50,13 @@ Ticks, the 1/2-cook choice and timers persist in localStorage.
 - `remind: ["..."]` and `grocery` items are checkboxes. When every item is ticked, the box collapses into a done bar (unticking re-expands it), and ticks persist per day.
 - `grocery` can be a list of strings or `{ type: "topup" | "main", title, items: [...] }`. The type picks the done message.
 - The Shopping section's `topup` list works the same way.
+
+## Navigation (tabs)
+- A bottom tab bar: Today | Week | Kitchen | Recipes | History. Routes are hashes: `#today`, `#today/wed`, `#week`, `#kitchen`, `#recipes`, `#recipes/c-chicken` (component) or `#recipes/m-bowl` (meal), `#history`. Old `#wed` links still work. The last tab is remembered; the default is Today.
+- **Today:** day strip, reminders, groceries, night-before, cook section, meals.
+- **Week:** per-day meals with portions, eating-out ticks and Submit.
+- **Kitchen:** fridge, freezer & thaw, shopping (top-ups, main shop, repeat list).
+- **Recipes:** collapsible cards, all collapsed by default.
+- **History:** the `weeks.js` list plus a repeat list.
+- All collapsibles use one pattern (`cx` in app.js): same chevron and animation, with state remembered in localStorage.
+- `build.py` now only copies the newest week page to `index.html` with root paths; History renders from `weeks.js` in app.js.
