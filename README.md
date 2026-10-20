@@ -15,3 +15,12 @@ Open `index.html` directly. It works from file://, with no server needed.
 2. Add a new entry to the **top** of `weeks.js`: `file`, `start`, `range`, `title`, `summary` (one line describing the components).
 3. Run `python3 build.py` to regenerate `index.html`.
 4. Optional: `cd .. && python3 -c "import shutil;shutil.make_archive('meal-prep-site','zip','.','meal-prep-site')"` to share.
+
+## Day reminders (in each `days[]` entry of the week's `.data.js`)
+- `remind: ["..."]`: freezer/thaw and use-by reminders, shown in the pink box.
+- `grocery: ["..."]`: light grocery/top-up nudges, shown in a separate green "Groceries" box. Keep them short. Example: `grocery: ["On the way home: cucumber + olives."]`.
+Both are optional.
+
+## Calendar & shortcuts
+- The calendar button (top right) shows the month. Days in this week are highlighted and switch the day view; cook days have a dot. Days from older weeks link to that week's page (`file#tue`). Each `weeks.js` entry needs `start` and `end` dates for this.
+- The menu button (top left) jumps to sections; on wide screens the same list sits on the left.

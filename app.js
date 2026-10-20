@@ -1,5 +1,6 @@
 /* Renders a week from window.WEEK. Vanilla JS, works on file:// and GitHub Pages. */
 (function () {
+  var cur = 0;
   var W = window.WEEK, C = W.components, M = W.meals, D = W.days;
   var $ = function (id) { return document.getElementById(id); };
   var dayName = {}; D.forEach(function (d) { dayName[d.id] = d.label + " " + d.num; });
@@ -31,7 +32,9 @@
   function render(i) {
     var d = D[i], h = "";
     [].forEach.call(document.querySelectorAll(".days button"), function (b, j) { b.setAttribute("aria-pressed", j === i ? "true" : "false"); });
-    if (d.remind && d.remind.length) h += '<div class="remind"><strong>Reminder</strong>' + list(d.remind, false) + "</div>";
+    var rem = d.remind && d.remind.length, gro = d.grocery && d.grocery.length;
+    if (rem) h += '<div class="remind"><strong>Reminder</strong>' + list(d.remind, false) + "</div>";
+    if (gro) h += ('<div class="grocery"><strong><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14l-1.4 11.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z M9 7V6a3 3 0 0 1 6 0v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Groceries</strong>' + list(d.grocery, false) + "</div>");
     var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b) + meal("Lunch", d.l) + meal("Dinner", d.d, d.dAlt) +
       '<div class="meal"><p class="slot">Snacks</p><p>' + W.snacks + "</p></div></section>";
     if (d.cook) {
@@ -58,7 +61,7 @@
     }).join("");
     $("days").onclick = function (e) {
       var b = e.target.closest("button"); if (!b) return;
-      var i = +b.dataset.i; render(i); history.replaceState(null, "", "#" + D[i].id);
+      var i = +b.dataset.i; cur = i; render(i); history.replaceState(null, "", "#" + D[i].id);
     };
     $("week-table").innerHTML = "<table><thead><tr><th>Day</th><th>Lunch</th><th>Dinner</th></tr></thead><tbody>" + D.map(function (d) {
       var cell = function (id, alt) { if (!id) return '<span class="muted">—</span>'; var m = M[id];
@@ -86,7 +89,73 @@
   }
 
   staticParts();
-  render(pick());
+  cur = pick();
+  render(cur);
+
+  /* ---- Section shortcuts (left) ---- */
+  var SECTIONS = [["today-title","Today"],["week","Rest of the week"],["fridge","In the fridge"],["recipes","All recipes"],["shop","Shopping & freezer"]];
+  if ($("archive")) SECTIONS.push(["archive","Past weeks"]);
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function go(id) { var el = $(id); if (!el) return; el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    el.setAttribute("tabindex", "-1"); el.focus({ preventScroll: true }); }
+  var links = SECTIONS.map(function (s) { return '<li><a href="#' + s[0] + '" data-go="' + s[0] + '">' + s[1] + "</a></li>"; }).join("");
+  $("jump-list").innerHTML = links; if ($("side-list")) $("side-list").innerHTML = links;
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest("a[data-go]"); if (!a) return;
+    e.preventDefault(); closeAll(); go(a.dataset.go);
+  });
+
+  /* ---- Popovers ---- */
+  var pops = [["jump-btn","jump-pop"],["cal-btn","cal-pop"]], opener = null;
+  function closeAll(restore) {
+    pops.forEach(function (p) { var b = $(p[0]), el = $(p[1]); if (!el || el.hidden) return; el.hidden = true; b.setAttribute("aria-expanded", "false"); });
+    if (restore && opener) opener.focus(); opener = null;
+  }
+  function open(p) {
+    closeAll(); var b = $(p[0]), el = $(p[1]); el.hidden = false; b.setAttribute("aria-expanded", "true"); opener = b;
+    if (p[1] === "cal-pop") drawCal();
+    var f = el.querySelector(".sel") || el.querySelector("button[data-day]") || el.querySelector("a, button:not([disabled])"); if (f) f.focus();
+  }
+  pops.forEach(function (p) { var b = $(p[0]); if (b) b.onclick = function (e) { e.stopPropagation(); $(p[1]).hidden ? open(p) : closeAll(true); }; });
+  document.addEventListener("click", function (e) { if (!e.target.closest(".pop") && !e.target.closest(".icon-btn")) closeAll(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeAll(true); });
+
+  /* ---- Calendar ---- */
+  var IDS = ["sun","mon","tue","wed","thu","fri","sat"];
+  var base = location.pathname.indexOf("/weeks/") > -1 ? "../" : "";
+  function iso(dt) { return dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2); }
+  function parse(s) { var p = s.split("-"); return new Date(+p[0], p[1] - 1, +p[2]); }
+  var todayIso = (function () { try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); } catch (e) { return iso(new Date()); } })();
+  var here = {}; D.forEach(function (d, i) { here[d.date] = i; });
+  var other = {}; (window.WEEKS || []).forEach(function (w) {
+    if (!w.start || !w.end) return; var a = parse(w.start), z = parse(w.end);
+    for (var t = new Date(a); t <= z; t.setDate(t.getDate() + 1)) { var k = iso(t); if (!(k in here)) other[k] = base + w.file + "#" + IDS[t.getDay()]; }
+  });
+  var view = parse(D[cur].date); view.setDate(1);
+  function drawCal() {
+    var y = view.getFullYear(), m = view.getMonth(), first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
+    var lead = (first.getDay() + 6) % 7, sel = D[cur].date;
+    var h = '<div class="cal-head"><button type="button" class="icon-btn sm" data-nav="-1" aria-label="Previous month">\u2039</button><b>' +
+      first.toLocaleDateString("en-AU", { month: "long", year: "numeric" }) + '</b><button type="button" class="icon-btn sm" data-nav="1" aria-label="Next month">\u203a</button></div>' +
+      '<div class="cal-grid" role="grid">' + ["M","T","W","T","F","S","S"].map(function (x) { return '<span class="dow" aria-hidden="true">' + x + "</span>"; }).join("");
+    for (var i = 0; i < lead; i++) h += "<span></span>";
+    for (var dd = 1; dd <= days; dd++) {
+      var k = iso(new Date(y, m, dd)), label = new Date(y, m, dd).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
+      var cls = "day" + (k === todayIso ? " today" : ""), attrs = "";
+      if (k in here) { var di = here[k]; cls += " plan" + (D[di].cook ? " cook" : "") + (k === sel ? " sel" : "");
+        h += '<button type="button" class="' + cls + '" data-day="' + di + '" aria-label="' + label + (D[di].cook ? ", cook day" : "") + '"' + (k === todayIso ? ' aria-current="date"' : "") + (k === sel ? ' aria-pressed="true"' : "") + ">" + dd + "</button>"; }
+      else if (k in other) h += '<a class="' + cls + ' past" href="' + other[k] + '" aria-label="' + label + ', past week">' + dd + "</a>";
+      else h += '<button type="button" class="' + cls + '" disabled aria-label="' + label + ', no plan"' + (k === todayIso ? ' aria-current="date"' : "") + ">" + dd + "</button>";
+    }
+    h += '</div><p class="cal-key"><span class="k plan"></span>Planned <span class="k cook"></span>Cook day <span class="k today"></span>Today</p>';
+    $("cal").innerHTML = h;
+  }
+  $("cal").addEventListener("click", function (e) {
+    e.stopPropagation();
+    var n = e.target.closest("[data-nav]"); if (n) { view.setMonth(view.getMonth() + +n.dataset.nav); drawCal(); $("cal").querySelector('[data-nav="' + n.dataset.nav + '"]').focus(); return; }
+    var b = e.target.closest("[data-day]"); if (!b) return;
+    cur = +b.dataset.day; render(cur); history.replaceState(null, "", "#" + D[cur].id); closeAll(true); window.scrollTo(0, 0);
+  });
   var cp = $("copy");
   if (cp) cp.onclick = function () {
     var t = $("repeat").innerText;

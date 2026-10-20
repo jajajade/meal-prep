@@ -10,31 +10,38 @@
 </head>
 <body>
 <header class="top">
-  <div class="bar"><a href="../index.html" class="back">All weeks</a><span class="range">Tue 20 – Sun 25 Oct</span></div>
+  <div class="bar">
+    <button type="button" class="icon-btn" id="jump-btn" aria-label="Jump to section" aria-expanded="false" aria-controls="jump-pop"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <div class="mid"><span class="range">Tue 20 – Sun 25 Oct</span><a href="../index.html" class="back">All weeks</a></div>
+    <button type="button" class="icon-btn" id="cal-btn" aria-label="Open calendar" aria-expanded="false" aria-controls="cal-pop"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </div>
+  <div class="pop pop-left" id="jump-pop" role="dialog" aria-label="Jump to section" hidden><ul class="jump-list" id="jump-list"></ul></div>
+  <div class="pop pop-right" id="cal-pop" role="dialog" aria-label="Calendar" hidden><div id="cal"></div></div>
   <nav class="days" id="days" aria-label="Choose a day"></nav>
 </header>
+<nav class="side" aria-label="Sections"><ul class="jump-list" id="side-list"></ul></nav>
 <main>
-  <h1 id="today-title">Today</h1>
+  <h1 id="today-title" class="anchor">Today</h1>
   <div id="today"><noscript><p>Turn on JavaScript to see the plan.</p></noscript></div>
 
-  <section class="below">
+  <section class="below anchor" id="week">
     <h2>Rest of the week</h2>
     <div class="scroll" id="week-table"></div>
   </section>
-  <section class="below">
+  <section class="below anchor" id="fridge">
     <h2>In the fridge</h2>
     <p class="small muted">Prepped components: made → keeps until</p>
     <div id="fridge"></div>
   </section>
-  <section class="below">
+  <section class="below anchor" id="recipes">
     <h2>All recipes</h2>
     <div id="all-recipes" class="ref"></div>
   </section>
-  <section class="below two">
+  <section class="below two anchor" id="shop">
     <div><h2>Shopping top-up</h2><div id="topup"></div></div>
     <div><h2>Freezer</h2><div id="freezer"></div></div>
   </section>
-  <section class="below quiet">
+  <section class="below quiet anchor" id="repeat-sec">
     <details><summary>Repeat this week: full shopping list</summary>
       <div id="repeat"></div>
       <p><button type="button" class="btn" id="copy">Copy list</button></p>
@@ -43,6 +50,7 @@
   <p class="small muted foot" id="targets"></p>
 </main>
 <script src="2026-10-20.data.js"></script>
+<script src="../weeks.js"></script>
 <script src="../app.js"></script>
 </body>
 </html>

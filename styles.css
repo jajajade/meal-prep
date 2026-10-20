@@ -67,3 +67,47 @@ tbody th{white-space:nowrap;font-weight:700}
 .archive a b{color:var(--acc)}
 .archive a span{display:block;font-size:.9rem;color:var(--mute)}
 .grp{font:700 .85rem "Atkinson Hyperlegible",system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:16px 0 6px}
+/* header controls */
+.bar{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:center;padding:8px 16px 0}
+.mid{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.mid .back{min-height:28px;font-size:.88rem}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;cursor:pointer;font:inherit;font-size:1.3rem}
+.icon-btn:hover,.icon-btn[aria-expanded=true]{border-color:var(--ink)}
+.icon-btn.sm{width:40px;height:40px;border:0;background:none}
+.top{position:sticky}
+.pop{position:absolute;top:56px;z-index:10;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 8px rgba(31,42,34,.08),0 16px 40px rgba(31,42,34,.14);padding:10px}
+.pop-left{left:12px;min-width:220px}
+.pop-right{right:12px;width:min(320px,calc(100vw - 24px))}
+.top .bar,.top .pop{max-width:none}
+.jump-list{list-style:none;margin:0;padding:0}
+.jump-list a{display:flex;align-items:center;min-height:44px;padding:0 10px;border-radius:10px;text-decoration:none;color:var(--ink)}
+.jump-list a:hover{background:var(--chip)}
+.anchor{scroll-margin-top:150px}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.side{display:none}
+@media (min-width:1100px){
+  .side{display:block;position:fixed;left:max(16px,calc(50vw - 360px - 220px));top:150px;width:190px}
+  .side .jump-list a{min-height:36px;font-size:.92rem;color:var(--mute)}
+  .side .jump-list a:hover{color:var(--ink)}
+}
+/* calendar */
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.dow{font-size:.78rem;color:var(--mute);padding:4px 0}
+.cal-grid .day{font:inherit;font-size:.95rem;aspect-ratio:1;min-height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid transparent;background:none;color:var(--ink);text-decoration:none;position:relative;cursor:pointer}
+.cal-grid .day[disabled]{color:#5f6a62;opacity:.75;cursor:default}
+.cal-grid .plan{background:var(--herb-bg);color:var(--herb);font-weight:700}
+.cal-grid .past{background:var(--chip);color:var(--ink)}
+.cal-grid .cook::after{content:"";position:absolute;bottom:5px;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.cal-grid .today{border-color:var(--acc);border-width:2px}
+.cal-grid .sel{background:var(--ink);color:#fff}
+.cal-key{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.8rem;color:var(--mute);margin:10px 0 0}
+.k{display:inline-block;width:12px;height:12px;border-radius:4px;margin-left:6px}
+.k.plan{background:var(--herb-bg)}.k.cook{background:var(--acc);border-radius:50%;width:8px;height:8px}.k.today{border:2px solid var(--acc)}
+/* grocery reminders */
+.grocery{background:var(--herb-bg);border-radius:12px;padding:12px 16px;margin:0 0 24px}
+.remind + .grocery{margin-top:-12px}
+.grocery:first-child{margin-top:0}
+.grocery strong{display:inline-flex;align-items:center;gap:6px;color:var(--herb)}
+.grocery ul{margin:4px 0 0}
