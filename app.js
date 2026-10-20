@@ -82,9 +82,78 @@
       return '<div class="lane"><h4>Person ' + who + "</h4><ol class=\"check cooklist\">" + p.cook.map(function (c, i) { return c.a === who ? step(c, i) : ""; }).join("") + "</ol></div>"; }).join("") + "</div>";
     h += '<h3 class="step-h">5. Pack</h3>' + list(p.pack, true, k + "pack");
     h += "</div>";
-    h += '<div role="tabpanel" id="panel-rec" aria-labelledby="tab-rec"' + (tab === "rec" ? "" : " hidden") + ">" + d.cook.make.map(function (id) { return recipe(id, true); }).join("") + "</div>";
+    h += '<div role="tabpanel" id="panel-rec" aria-labelledby="tab-rec"' + (tab === "rec" ? "" : " hidden") + ">" + recipeCards(d) + "</div>";
     return h + "</section>";
   }
+  /* ---- Collapsible recipe cards with Done ticks ---- */
+  var CHEV = '<svg class="chev" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function rk(kind, d, id) { return kind + ":" + W.range + ":" + d.id + ":" + id; }
+  function recipeCards(d) {
+    var ids = d.cook.make, done = ids.filter(function (id) { return lsGet(rk("rdone", d, id), "0") === "1"; });
+    var firstOpen = ids.filter(function (id) { return done.indexOf(id) < 0; })[0];
+    var h = '<div class="rbar"><p class="rprog" id="rprog" aria-live="polite">' + progText(done.length, ids.length) + '</p><button type="button" class="linkbtn" id="rexpand">' + "Expand all" + "</button></div>";
+    h += '<div class="rmeter" aria-hidden="true"><span id="rmeter" style="width:' + (100 * done.length / ids.length) + '%"></span></div>';
+    h += ids.map(function (id) {
+      var c = C[id], isDone = done.indexOf(id) > -1, st = lsGet(rk("rexp", d, id), null);
+      var open = isDone ? false : (st === null ? id === firstOpen : st === "1");
+      var name = c.name.replace(" (Pestle)", ""), pestle = /\(Pestle\)/.test(c.name);
+      return '<article class="rcard' + (open ? " open" : "") + (isDone ? " done" : "") + '" data-rid="' + id + '">' +
+        '<div class="rhead"><label class="dtick"><input type="checkbox" data-done="' + id + '"' + (isDone ? " checked" : "") + ' aria-label="' + name + ' done"><span class="box" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label>' +
+        '<button type="button" class="rtoggle" aria-expanded="' + open + '" aria-controls="rb-' + id + '"><span class="rname">' + name + (pestle ? ' <span class="tag p">Pestle</span>' : "") + '</span><span class="rmeta">' + c.serves + " · keeps to " + c.keeps + "</span>" + CHEV + "</button></div>" +
+        '<div class="rbody" id="rb-' + id + '"' + (open ? "" : " inert") + '><div class="rin">' + recipe(id, true).replace(/<h3>.*?<\/h3>/, "").replace(/<p class="meta">.*?<\/p>/, "") + "</div></div></article>";
+    }).join("");
+    return h;
+  }
+  function progText(n, t) { return n === t ? "All " + t + " recipes done. Nice work!" : n + " of " + t + " recipes done"; }
+  function setOpen(card, open) {
+    card.classList.toggle("open", open);
+    card.querySelector(".rtoggle").setAttribute("aria-expanded", open);
+    var b = card.querySelector(".rbody"); if (open) b.removeAttribute("inert"); else b.setAttribute("inert", "");
+    lsSet(rk("rexp", D[cur], card.dataset.rid), open ? "1" : "0");
+    syncExpandBtn();
+  }
+  function syncExpandBtn() { var b = $("rexpand"); if (!b) return; var any = document.querySelector(".rcard:not(.open)"); b.textContent = any ? "Expand all" : "Collapse all"; }
+  document.addEventListener("click", function (e) {
+    var tg = e.target.closest(".rtoggle"); if (tg) { var card = tg.closest(".rcard"); setOpen(card, !card.classList.contains("open")); return; }
+    if (e.target.closest("#rexpand")) { var open = !!document.querySelector(".rcard:not(.open)"); [].forEach.call(document.querySelectorAll(".rcard"), function (c) { setOpen(c, open); }); }
+  });
+  document.addEventListener("change", function (e) {
+    var cb = e.target.closest("[data-done]"); if (!cb) return;
+    var d = D[cur], card = cb.closest(".rcard");
+    lsSet(rk("rdone", d, cb.dataset.done), cb.checked ? "1" : "0");
+    card.classList.toggle("done", cb.checked);
+    var ids = d.cook.make, n = ids.filter(function (id) { return lsGet(rk("rdone", d, id), "0") === "1"; }).length;
+    $("rprog").textContent = progText(n, ids.length); $("rmeter").style.width = (100 * n / ids.length) + "%";
+    if (cb.checked) {
+      celebrate(cb.nextElementSibling, n === ids.length, card);
+      setTimeout(function () { setOpen(card, false); var next = document.querySelector(".rcard:not(.done)"); if (next && !document.querySelector(".rcard.open")) setOpen(next, true); }, 450);
+    }
+  });
+
+  /* ---- Confetti (canvas, ~1 s; gentle pulse when reduced motion) ---- */
+  var COLS = ["#a8402b", "#3e6140", "#e1ebdd", "#f7e4de", "#c8a24a", "#1f2a22"];
+  function celebrate(el, big, card) {
+    var rm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (rm) { card.classList.remove("pulse"); void card.offsetWidth; card.classList.add("pulse"); if (big) toast("All recipes done. Enjoy dinner!"); return; }
+    var r = el.getBoundingClientRect(), cv = document.createElement("canvas"), dpr = window.devicePixelRatio || 1;
+    cv.className = "confetti"; cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; document.body.appendChild(cv);
+    var ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
+    var ps = [], n = big ? 160 : 36, dur = big ? 2200 : 1000;
+    for (var i = 0; i < n; i++) {
+      var ox = big ? innerWidth / 2 : r.left + r.width / 2, oy = big ? innerHeight * 0.35 : r.top + r.height / 2;
+      var ang = big ? Math.random() * Math.PI * 2 : -Math.PI / 2 + (Math.random() - .5) * 2.2, sp = (big ? 6 : 4) + Math.random() * (big ? 8 : 5);
+      ps.push({ x: ox, y: oy, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, w: 5 + Math.random() * 5, h: 3 + Math.random() * 4, rot: Math.random() * 6, vr: (Math.random() - .5) * .4, c: COLS[i % COLS.length] });
+    }
+    var t0 = performance.now();
+    (function frame(t) {
+      var k = (t - t0) / dur; ctx.clearRect(0, 0, innerWidth, innerHeight);
+      ps.forEach(function (p) { p.vy += .25; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        ctx.save(); ctx.globalAlpha = Math.max(0, 1 - k * k); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore(); });
+      if (k < 1) requestAnimationFrame(frame); else cv.remove();
+    })(t0);
+    if (big) toast("All recipes done. Enjoy dinner!");
+  }
+
   document.addEventListener("click", function (e) {
     var t = e.target.closest("[data-tab]"); if (t) { lsSet("cooktab", t.dataset.tab); render(cur); var b = $(t.dataset.tab === "plan" ? "tab-plan" : "tab-rec"); if (b) b.focus(); return; }
     var c = e.target.closest("[data-cooks]"); if (c) { lsSet("cooks", c.dataset.cooks); render(cur); var b2 = document.querySelector('[data-cooks="' + c.dataset.cooks + '"]'); if (b2) b2.focus(); return; }
