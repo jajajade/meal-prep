@@ -6,6 +6,9 @@
 
 web
 
+## Name
+Beanos and Lentos's Magical Cookbook (short: Cookbook / Magical Cookbook)
+
 ## Users
 Jade (a designer) and her partner Matteo. They use it mostly on their phones in the kitchen while prepping and cooking, often with busy or messy hands.
 

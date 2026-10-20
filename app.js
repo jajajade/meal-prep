@@ -40,12 +40,11 @@
 
   function meal(slot, id, alt, okey) {
     var o = okey && outState()[okey];
-    if (o && o.out) return '<div class="meal out"><p class="slot">' + slot + '</p><h3><s>' + (id ? M[id].name : "Planned meal") + '</s></h3><p class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</p></div>";
-    if (!id) return '<div class="meal"><p class="slot">' + slot + '</p><p class="muted">Use whatever you have; prep comes first today.</p></div>';
+    if (o && o.out) return '<div class="meal out"><h3><s>' + (id ? M[id].name : "Planned meal") + '</s></h3><p class="slot">' + slot + '</p><p class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</p></div>";
+    if (!id) return '<div class="meal"><h3>Nothing planned</h3><p class="slot">' + slot + '</p><p class="muted">Use whatever you have; prep comes first today.</p></div>';
     var m = M[id];
     var uses = m.uses.length ? '<p class="uses-h">From the fridge (per person):</p><ul class="uses">' + usesList(m).map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
-    return '<div class="meal"><p class="slot">' + slot + (m.time ? ' <span class="muted">· ' + m.time + "</span>" : "") + "</p>" +
-      "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + uses +
+    return '<div class="meal">' + "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + '<p class="slot">' + slot + (m.time ? ' <span class="muted">· ' + m.time + "</span>" : "") + "</p>" + uses +
       (function () { var extra = m.uses.length ? m.items.filter(function (t) { return !/^(1|1½) portions? |^1 jammy egg$/.test(t); }) : m.items;
         return extra.length ? (m.uses.length ? '<p class="uses-h">Plus:</p>' : "") + list(extra.map(function (t) { return t.replace(/^1 jammy egg AND /, ""); }), false) : ""; })() + (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "") + nut(m.nut) + "</div>";
   }
@@ -54,19 +53,21 @@
     var d = D[i], h = "";
     [].forEach.call(document.querySelectorAll(".days button"), function (b, j) { b.setAttribute("aria-pressed", j === i ? "true" : "false"); });
     var BAG = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14l-1.4 11.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z M9 7V6a3 3 0 0 1 6 0v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
-    if (d.remind && d.remind.length) h += tickBox(d.id + ":remind", "remind", "Reminder", d.remind, "All reminders sorted. Nice!");
+    var IC = function (p) { return '<svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="' + p + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'; };
+    var BELL = IC("M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"), MOON = IC("M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z");
+    if (d.remind && d.remind.length) h += tickBox(d.id + ":remind", "remind", BELL + "Reminders", d.remind, "All reminders sorted. Nice!");
     var g = d.grocery;
     if (g) { if (Array.isArray(g)) g = { type: "topup", title: "Groceries", items: g };
       if (g.items.length) h += tickBox(d.id + ":grocery", "grocery", BAG + "Groceries" + (g.title ? '<span class="tb-sub">' + g.title + "</span>" : ""), g.items,
         g.type === "main" ? "Big shop done. Next week\u2019s sorted!" : "Shopping sorted. Nice one!"); }
-    if (d.nightBefore && d.nightBefore.length) h += tickBox("nb:" + W.range + d.id, "nightb", "Tonight, for tomorrow\u2019s cook", d.nightBefore, "Ready for tomorrow\u2019s cook. Nice!");
+    if (d.nightBefore && d.nightBefore.length) h += tickBox("nb:" + W.range + d.id, "nightb", MOON + "Tonight, for tomorrow\u2019s cook", d.nightBefore, "Ready for tomorrow\u2019s cook. Nice!");
     var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b, null, d.id + "-b") + meal("Lunch", d.l, null, d.id + "-l") + meal("Dinner", d.d, d.dAlt, d.id + "-d") +
       '<div class="meal"><p class="slot">Snacks</p><p>' + W.snacks + "</p></div></section>";
     if (d.cook) {
       var done = cookComplete(d), open = !done || lsGet(ckey(d), "0") === "1";
       wasComplete[d.id] = done;
       var wrap = '<div class="cookwrap' + (open ? "" : " collapsed") + '" id="cook-sec">' +
-        (done ? '<button type="button" class="cookbar" id="cookbar" aria-expanded="' + open + '" aria-controls="cookbody"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="cb-t">Cook day done: ' + d.cook.make.length + ' recipes packed</span><span class="cb-a">' + (open ? "Hide" : "Tap to view") + "</span>" + CHEV + "</button>" : "") +
+        (done ? '<button type="button" class="cookbar" id="cookbar" aria-expanded="' + open + '" aria-controls="cookbody"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="cb-t">Cook day done: ' + d.cook.make.length + ' recipes packed</span><span class="cb-a">' + (open ? "Hide" : "Show") + "</span>" + CHEV + "</button>" : "") +
         '<div class="cookbody" id="cookbody"' + (open ? "" : " inert") + '><div class="rin">' + cookSection(d) + "</div></div></div>";
       h += wrap + meals;
     } else h += meals;
@@ -85,11 +86,11 @@
   function fmtMin(m) { return m % 1 ? Math.floor(m) + "½ min" : m + " min"; }
   function cookSection(d) {
     var p = d.cook.plan, tab = lsGet("cooktab", "plan"), n = lsGet("cooks", "1"), k = "tick:" + W.range + ":" + d.id + ":";
-    var h = '<section class="cook"><h2>Cook today <span class="muted">' + (p ? p.time : d.cook.time) + "</span></h2>";
+    var h = '<section class="cook"><h2 class="sec-h"><svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM2 10h2M20 10h2M9 6c0-1 1-1 1-2M14 6c0-1 1-1 1-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Cook today <span class="muted">' + (p ? p.time : d.cook.time) + "</span></h2>";
     if (!p) return h + "</section><section><h2>Recipes for today</h2>" + d.cook.make.map(function (id) { return recipe(id, true); }).join("") + "</section>";
     h += '<div class="tabs" role="tablist" aria-label="Cook view">' +
-      '<button type="button" role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="' + (tab === "plan") + '" data-tab="plan">Cook plan</button>' +
-      '<button type="button" role="tab" id="tab-rec" aria-controls="panel-rec" aria-selected="' + (tab === "rec") + '" data-tab="rec">Recipes</button></div>';
+      '<button type="button" role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="' + (tab === "plan") + '" data-ctab="plan">Cook plan</button>' +
+      '<button type="button" role="tab" id="tab-rec" aria-controls="panel-rec" aria-selected="' + (tab === "rec") + '" data-ctab="rec">Recipes</button></div>';
     h += '<div role="tabpanel" id="panel-plan" aria-labelledby="tab-plan"' + (tab === "plan" ? "" : " hidden") + ">";
     h += '<div class="seg" role="group" aria-label="Number of cooks"><button type="button" data-cooks="1" aria-pressed="' + (n === "1") + '">1 cook</button><button type="button" data-cooks="2" aria-pressed="' + (n === "2") + '">2 cooks</button></div>';
     h += '<h3 class="step-h">1. Get out</h3>' + Object.keys(p.getout).map(function (g) { return '<h4>' + g + "</h4>" + list(p.getout[g], true, k + "get" + g); }).join("");
@@ -177,7 +178,7 @@
   }
 
   document.addEventListener("click", function (e) {
-    var t = e.target.closest("[data-tab]"); if (t) { lsSet("cooktab", t.dataset.tab); render(cur); var b = $(t.dataset.tab === "plan" ? "tab-plan" : "tab-rec"); if (b) b.focus(); return; }
+    var t = e.target.closest("[data-ctab]"); if (t) { lsSet("cooktab", t.dataset.ctab); render(cur); var b = $(t.dataset.ctab === "plan" ? "tab-plan" : "tab-rec"); if (b) b.focus(); return; }
     var c = e.target.closest("[data-cooks]"); if (c) { lsSet("cooks", c.dataset.cooks); render(cur); var b2 = document.querySelector('[data-cooks="' + c.dataset.cooks + '"]'); if (b2) b2.focus(); return; }
     var tm = e.target.closest("[data-timer]"); if (tm) { toggleTimer(tm.dataset.timer, +tm.dataset.min); return; }
     var r = e.target.closest("[data-ref]"); if (r) { e.preventDefault(); var det = $(r.dataset.ref); if (det) { det.open = true; det.scrollIntoView({ block: "start" }); det.querySelector("summary").focus(); } }
@@ -331,7 +332,7 @@
   function setCookOpen(open) {
     var d = D[cur]; lsSet(ckey(d), open ? "1" : "0");
     var w = $("cook-sec"), b = $("cookbar"), body = $("cookbody");
-    w.classList.toggle("collapsed", !open); b.setAttribute("aria-expanded", open); b.querySelector(".cb-a").textContent = open ? "Hide" : "Tap to view";
+    w.classList.toggle("collapsed", !open); b.setAttribute("aria-expanded", open); b.querySelector(".cb-a").textContent = open ? "Hide" : "Show";
     if (open) body.removeAttribute("inert"); else body.setAttribute("inert", "");
   }
   document.addEventListener("click", function (e) { if (e.target.closest("#cookbar")) setCookOpen($("cook-sec").classList.contains("collapsed")); });
@@ -425,9 +426,9 @@
     lsSet("lasttab", tab);
     TABS.forEach(function (t) {
       var v = $("v-" + t); if (v) v.hidden = t !== tab;
-      var b = document.querySelector('.tabbar a[data-tab="' + t + '"]'); if (b) { if (t === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
+      [].forEach.call(document.querySelectorAll('a[data-nav="' + t + '"]'), function (b) { if (t === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     });
-    document.body.setAttribute("data-tab", tab);
+    document.body.setAttribute("data-view", tab);
     if (tab === "today") {
       var di = -1; if (sub) for (var k = 0; k < D.length; k++) if (D[k].id === sub) di = k;
       if (di < 0) di = dayChosen ? cur : todayIdx();
@@ -442,11 +443,61 @@
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", route);
-  render = (function (r) { return function (i) { r(i); [].forEach.call(document.querySelectorAll("#days a"), function (a, j) { a.setAttribute("aria-current", j === i ? "true" : "false"); }); }; })(render);
+  render = (function (r) { return function (i) { r(i); if (typeof dayNav === "function" && typeof IDS !== "undefined") dayNav(); [].forEach.call(document.querySelectorAll("#days a"), function (a, j) { a.setAttribute("aria-current", j === i ? "true" : "false"); }); }; })(render);
 
   staticParts(); refParts(); overview();
   cur = todayIdx();
+  var IDS = ["sun","mon","tue","wed","thu","fri","sat"];
+  var base = location.pathname.indexOf("/weeks/") > -1 ? "../" : "";
+  function iso(dt) { return dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2); }
   route();
+
+  /* ---- Previous / next day (arrows, keys, swipe) ---- */
+  function weekAt(dateIso) { var r = null; (window.WEEKS || []).forEach(function (w) { if (w.start && w.end && w.start <= dateIso && dateIso <= w.end && w.start !== D[0].date) r = w; }); return r; }
+  function adj(delta) {
+    var i = cur + delta; if (i >= 0 && i < D.length) return "#today/" + D[i].id;
+    var t = parse(D[cur].date); t.setDate(t.getDate() + delta); var w = weekAt(iso(t));
+    return w ? base + w.file + "#today/" + IDS[t.getDay()] : null;
+  }
+  function dayNav() {
+    [["day-prev", -1], ["day-next", 1]].forEach(function (p) {
+      var b = $(p[0]); if (!b) return; var href = adj(p[1]);
+      b.disabled = !href; b.dataset.href = href || "";
+      var t = parse(D[cur].date); t.setDate(t.getDate() + p[1]);
+      b.setAttribute("aria-label", (p[1] < 0 ? "Previous day" : "Next day") + (href ? ", " + t.toLocaleDateString("en-AU", { weekday: "long", day: "numeric" }) : ", none in this plan"));
+    });
+  }
+  function goDay(delta) { var h = adj(delta); if (!h) return; if (h.charAt(0) === "#") location.hash = h; else location.href = h; }
+  document.addEventListener("click", function (e) { var b = e.target.closest("#day-prev, #day-next"); if (b && !b.disabled) goDay(b.id === "day-prev" ? -1 : 1); });
+  document.addEventListener("keydown", function (e) {
+    if (document.body.getAttribute("data-view") !== "today" || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t = e.target; if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (!$("cal-pop").hidden || ($("drawer") && !$("drawer").hidden)) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); goDay(-1); } else if (e.key === "ArrowRight") { e.preventDefault(); goDay(1); }
+  });
+  var sx = null, sy = 0;
+  $("today").addEventListener("touchstart", function (e) { if (e.touches.length !== 1) { sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  $("today").addEventListener("touchend", function (e) {
+    if (sx === null) return; var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+    if (Math.abs(dx) > 70 && Math.abs(dy) < 40 && !e.target.closest(".scroll, input, textarea")) goDay(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  /* ---- Desktop menu drawer ---- */
+  var dr = $("drawer"), mb = $("menu-btn");
+  function drawerOpen(open) {
+    dr.hidden = !open; mb.setAttribute("aria-expanded", open); document.body.classList.toggle("drawer-open", open);
+    if (open) { var f = dr.querySelector('[aria-current="page"]') || dr.querySelector("a,button"); f.focus(); } else mb.focus();
+  }
+  if (dr && mb) {
+    mb.onclick = function () { drawerOpen(dr.hidden); };
+    dr.addEventListener("click", function (e) { if (e.target === dr || e.target.closest("#drawer-close")) drawerOpen(false); else if (e.target.closest("a")) { dr.hidden = true; mb.setAttribute("aria-expanded", "false"); document.body.classList.remove("drawer-open"); } });
+    document.addEventListener("keydown", function (e) {
+      if (dr.hidden) return;
+      if (e.key === "Escape") { e.preventDefault(); drawerOpen(false); return; }
+      if (e.key === "Tab") { var f = dr.querySelectorAll("a,button"), a = f[0], z = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); } }
+    });
+  }
 
   /* ---- Calendar popover ---- */
   var opener = null;
@@ -459,9 +510,6 @@
   document.addEventListener("click", function (e) { if (!e.target.closest(".pop") && !e.target.closest("#cal-btn")) closeCal(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeCal(true); });
 
-  var IDS = ["sun","mon","tue","wed","thu","fri","sat"];
-  var base = location.pathname.indexOf("/weeks/") > -1 ? "../" : "";
-  function iso(dt) { return dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2); }
   var todayIso = (function () { try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); } catch (e) { return iso(new Date()); } })();
   var here = {}; D.forEach(function (d, i) { here[d.date] = i; });
   var other = {}; (window.WEEKS || []).forEach(function (w) {

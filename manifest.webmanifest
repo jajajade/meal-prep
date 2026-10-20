@@ -1,14 +1,26 @@
 {
-  "name": "Meal prep",
-  "short_name": "Meal prep",
+  "name": "Beanos and Lentos's Magical Cookbook",
+  "short_name": "Cookbook",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "theme_color": "#3e6140",
-  "background_color": "#eef1ea",
+  "theme_color": "#f4f5f1",
+  "background_color": "#f4f5f1",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ]
 }

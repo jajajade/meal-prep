@@ -1,4 +1,6 @@
-# Beanos & Matteo · Meal prep site
+# Beanos and Lentos's Magical Cookbook
+
+Weekly meal-prep site for Beanos & Matteo.
 
 Open `index.html` directly. It works from file://, with no server needed.
 
