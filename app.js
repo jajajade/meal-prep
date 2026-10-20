@@ -15,12 +15,24 @@
   function nut(s) { return s ? '<p class="nut">Est. per serve: ' + s + "</p>" : ""; }
   function recipe(id, check) {
     var c = C[id];
-    return '<article class="recipe" id="r-' + id + '"><h3>' + c.name + "</h3>" +
+    return '<article class="recipe"><h3>' + c.name + "</h3>" +
       '<p class="meta">Makes ' + c.serves + " · keeps until " + c.keeps + "</p>" +
       "<h4>Ingredients</h4>" + list(c.ing, check, W.range + id) +
       "<h4>Method</h4><ol>" + c.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" + nut(c.nut) + "</article>";
   }
-  function meal(slot, id, alt) {
+  /* ---- Eating out / other plans ---- */
+  var OUTKEY = "out:" + W.range;
+  function outState() {
+    var st = {}; D.forEach(function (d) { if (d.out) Object.keys(d.out).forEach(function (k) { st[d.id + "-" + k] = { out: true, note: d.out[k] }; }); });
+    try { var saved = JSON.parse(localStorage.getItem(OUTKEY) || "null"); if (saved) st = saved; } catch (e) {}
+    return st;
+  }
+  function esc(t) { return String(t || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function isPestle(id) { var m = M[id]; return !!m && m.uses.some(function (u) { return /\(Pestle\)/.test(C[u].name); }); }
+
+  function meal(slot, id, alt, okey) {
+    var o = okey && outState()[okey];
+    if (o && o.out) return '<div class="meal out"><p class="slot">' + slot + '</p><h3><s>' + (id ? M[id].name : "Planned meal") + '</s></h3><p class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</p></div>";
     if (!id) return '<div class="meal"><p class="slot">' + slot + '</p><p class="muted">Use whatever you have; prep comes first today.</p></div>';
     var m = M[id];
     var uses = m.uses.length ? '<p class="uses">Uses: ' + m.uses.map(function (u) { return C[u].name.replace(" (Pestle)", "").replace(" (Jade's)", ""); }).join(", ") + "</p>" : "";
@@ -35,18 +47,132 @@
     var rem = d.remind && d.remind.length, gro = d.grocery && d.grocery.length;
     if (rem) h += '<div class="remind"><strong>Reminder</strong>' + list(d.remind, false) + "</div>";
     if (gro) h += ('<div class="grocery"><strong><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14l-1.4 11.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z M9 7V6a3 3 0 0 1 6 0v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Groceries</strong>' + list(d.grocery, false) + "</div>");
-    var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b) + meal("Lunch", d.l) + meal("Dinner", d.d, d.dAlt) +
+    if (d.nightBefore && d.nightBefore.length) h += '<div class="nightb"><strong>Tonight, for tomorrow\u2019s cook</strong>' + list(d.nightBefore, true, "nb:" + W.range + d.id) + "</div>";
+    var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b, null, d.id + "-b") + meal("Lunch", d.l, null, d.id + "-l") + meal("Dinner", d.d, d.dAlt, d.id + "-d") +
       '<div class="meal"><p class="slot">Snacks</p><p>' + W.snacks + "</p></div></section>";
-    if (d.cook) {
-      h += '<section><h2>Cook today <span class="muted">' + d.cook.time + "</span></h2>" +
-        '<ol class="order">' + d.cook.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol></section>";
-      h += "<section><h2>Recipes for today</h2>" + d.cook.make.map(function (id) { return recipe(id, true); }).join("") + "</section>";
-      h += meals;
-    } else h += meals;
+    if (d.cook) { h += cookSection(d); h += meals; } else h += meals;
     $("today").innerHTML = h;
     $("today-title").textContent = (d.cook ? "Cook day · " : "") + dayName[d.id];
-    restore();
+    restore(); tickTimers();
   }
+
+  /* ---- Cook plan ---- */
+  function lsGet(k, def) { try { var v = localStorage.getItem(k); return v === null ? def : v; } catch (e) { return def; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function timerBtn(key, min) {
+    return '<button type="button" class="timer" data-timer="' + key + '" data-min="' + min + '">Start ' + fmtMin(min) + "</button>";
+  }
+  function fmtMin(m) { return m % 1 ? Math.floor(m) + "½ min" : m + " min"; }
+  function cookSection(d) {
+    var p = d.cook.plan, tab = lsGet("cooktab", "plan"), n = lsGet("cooks", "1"), k = "tick:" + W.range + ":" + d.id + ":";
+    var h = '<section class="cook"><h2>Cook today <span class="muted">' + (p ? p.time : d.cook.time) + "</span></h2>";
+    if (!p) return h + "</section><section><h2>Recipes for today</h2>" + d.cook.make.map(function (id) { return recipe(id, true); }).join("") + "</section>";
+    h += '<div class="tabs" role="tablist" aria-label="Cook view">' +
+      '<button type="button" role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="' + (tab === "plan") + '" data-tab="plan">Cook plan</button>' +
+      '<button type="button" role="tab" id="tab-rec" aria-controls="panel-rec" aria-selected="' + (tab === "rec") + '" data-tab="rec">Recipes</button></div>';
+    h += '<div role="tabpanel" id="panel-plan" aria-labelledby="tab-plan"' + (tab === "plan" ? "" : " hidden") + ">";
+    h += '<div class="seg" role="group" aria-label="Number of cooks"><button type="button" data-cooks="1" aria-pressed="' + (n === "1") + '">1 cook</button><button type="button" data-cooks="2" aria-pressed="' + (n === "2") + '">2 cooks</button></div>';
+    h += '<h3 class="step-h">1. Get out</h3>' + Object.keys(p.getout).map(function (g) { return '<h4>' + g + "</h4>" + list(p.getout[g], true, k + "get" + g); }).join("");
+    h += '<h3 class="step-h">2. Weigh &amp; measure</h3>' + list(p.weigh.map(function (w) { return w[0] + ' <span class="rtag">' + w[1] + "</span>"; }), true, k + "weigh");
+    h += '<h3 class="step-h">3. Bulk prep</h3>' + list(p.bulk, true, k + "bulk");
+    h += '<h3 class="step-h">4. Cook</h3>';
+    var step = function (c, i) { return '<li><label><input type="checkbox" data-k="' + k + "cook-" + i + '"><span>' + (n === "1" ? "" : "") + c.t + "</span></label>" + (c.min ? timerBtn(d.id + "-" + i, c.min) : "") + "</li>"; };
+    if (n === "1") h += '<ol class="check cooklist">' + p.cook.map(step).join("") + "</ol>";
+    else h += '<div class="lanes">' + ["A", "B"].map(function (who) {
+      return '<div class="lane"><h4>Person ' + who + "</h4><ol class=\"check cooklist\">" + p.cook.map(function (c, i) { return c.a === who ? step(c, i) : ""; }).join("") + "</ol></div>"; }).join("") + "</div>";
+    h += '<h3 class="step-h">5. Pack</h3>' + list(p.pack, true, k + "pack");
+    h += "</div>";
+    h += '<div role="tabpanel" id="panel-rec" aria-labelledby="tab-rec"' + (tab === "rec" ? "" : " hidden") + ">" + d.cook.make.map(function (id) { return recipe(id, true); }).join("") + "</div>";
+    return h + "</section>";
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-tab]"); if (t) { lsSet("cooktab", t.dataset.tab); render(cur); var b = $(t.dataset.tab === "plan" ? "tab-plan" : "tab-rec"); if (b) b.focus(); return; }
+    var c = e.target.closest("[data-cooks]"); if (c) { lsSet("cooks", c.dataset.cooks); render(cur); var b2 = document.querySelector('[data-cooks="' + c.dataset.cooks + '"]'); if (b2) b2.focus(); return; }
+    var tm = e.target.closest("[data-timer]"); if (tm) { toggleTimer(tm.dataset.timer, +tm.dataset.min); return; }
+    var r = e.target.closest("[data-ref]"); if (r) { e.preventDefault(); var det = $(r.dataset.ref); if (det) { det.open = true; det.scrollIntoView({ block: "start" }); det.querySelector("summary").focus(); } }
+  });
+
+  /* ---- Timers (persist in localStorage; several can run at once) ---- */
+  function timers() { try { return JSON.parse(lsGet("timers", "{}")); } catch (e) { return {}; } }
+  function saveTimers(t) { lsSet("timers", JSON.stringify(t)); }
+  function toggleTimer(key, min) {
+    var t = timers();
+    if (t[key]) delete t[key]; else t[key] = { end: Date.now() + min * 60000, min: min, label: key };
+    saveTimers(t); tickTimers(); unlockAudio();
+  }
+  var actx = null;
+  function unlockAudio() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch (e) {} }
+  function beep() {
+    try { unlockAudio(); [0, .35, .7].forEach(function (s) { var o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = 880; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(.2, actx.currentTime + s); g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + s + .25); o.start(actx.currentTime + s); o.stop(actx.currentTime + s + .26); }); } catch (e) {}
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+  }
+  function tickTimers() {
+    var t = timers(), now = Date.now(), changed = false, running = 0;
+    Object.keys(t).forEach(function (k) {
+      var left = t[k].end - now;
+      if (left <= 0 && !t[k].done) { t[k].done = true; changed = true; beep(); toast("Timer done"); }
+      if (!t[k].done) running++;
+    });
+    if (changed) saveTimers(t);
+    [].forEach.call(document.querySelectorAll("[data-timer]"), function (b) {
+      var x = t[b.dataset.timer];
+      if (!x) { b.className = "timer"; b.textContent = "Start " + fmtMin(+b.dataset.min); b.setAttribute("aria-label", "Start " + fmtMin(+b.dataset.min) + " timer"); return; }
+      if (x.done) { b.className = "timer done"; b.textContent = "Done · reset"; b.setAttribute("aria-label", "Timer done, tap to reset"); return; }
+      var s = Math.ceil((x.end - now) / 1000), mm = Math.floor(s / 60), ss = ("0" + (s % 60)).slice(-2);
+      b.className = "timer run"; b.textContent = mm + ":" + ss + " left"; b.setAttribute("aria-label", mm + " minutes " + ss + " seconds left, tap to cancel");
+    });
+    var pill = $("timer-pill");
+    if (pill) { pill.hidden = !running; pill.textContent = running + (running === 1 ? " timer running" : " timers running"); }
+  }
+  setInterval(tickTimers, 1000);
+  function toast(msg) { var el = $("toast"); if (!el) return; el.textContent = msg; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { el.hidden = true; }, 3000); }
+
+  /* ---- Week overview ---- */
+  var SLOTS = [["b", "Breakfast"], ["l", "Lunch"], ["d", "Dinner"]];
+  function overview() {
+    var st = outState(), first = D[0], mon = new Date(+first.date.slice(0, 4), +first.date.slice(5, 7) - 1, +first.date.slice(8, 10));
+    while (mon.getDay() !== 1) mon.setDate(mon.getDate() - 1);
+    var byDate = {}; D.forEach(function (d) { byDate[d.date] = d; });
+    var h = '<p class="small muted">Tick a meal if you\u2019re eating out or have other plans, add a note, then press Submit.</p><div class="ov">';
+    for (var i = 0; i < 7; i++) {
+      var dt = new Date(mon); dt.setDate(mon.getDate() + i);
+      var key = dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2), d = byDate[key];
+      var title = dt.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+      h += '<div class="ov-day"><h3>' + title + (d && d.cook ? ' <span class="tag">cook day</span>' : "") + "</h3>";
+      if (!d) { h += '<p class="muted small">Not in this week\u2019s plan.</p></div>'; continue; }
+      SLOTS.forEach(function (s) {
+        var id = d[s[0]], ok = d.id + "-" + s[0], o = st[ok] || {}, m = id && M[id];
+        var refs = m ? m.uses.map(function (u) { return '<a href="#ref-c-' + u + '" data-ref="ref-c-' + u + '">' + C[u].name.split(" (")[0].split(",")[0] + "</a>"; }) : [];
+        if (m && m.items.length && id !== "birthday") refs.unshift('<a href="#ref-m-' + id + '" data-ref="ref-m-' + id + '">How to assemble</a>');
+        h += '<div class="ov-slot' + (o.out ? " out" : "") + '"><p class="slot">' + s[1] + "</p>" +
+          '<p class="ov-meal">' + (o.out ? "<s>" : "") + (m ? m.name : '<span class="muted">Nothing planned</span>') + (o.out ? "</s>" : "") + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "") + "</p>" +
+          (refs.length ? '<p class="ov-refs">' + refs.join(" · ") + "</p>" : "") +
+          '<label class="ov-out"><input type="checkbox" data-out="' + ok + '"' + (o.out ? " checked" : "") + "> Eating out / other plans</label>" +
+          '<label class="ov-note"><span class="sr">Note for ' + title + " " + s[1] + '</span><input type="text" data-note="' + ok + '" value="' + esc(o.note) + '" placeholder="Note (optional)" maxlength="60"></label></div>';
+      });
+      h += "</div>";
+    }
+    h += '</div><p><button type="button" class="btn" id="ov-submit">Submit changes</button></p><div id="ov-fallback" hidden><p class="small">Couldn\u2019t copy automatically. Select and copy this:</p><textarea id="ov-text" rows="3" readonly></textarea></div>';
+    $("overview-body").innerHTML = h;
+  }
+  function collectOut() {
+    var st = {}; [].forEach.call(document.querySelectorAll("[data-out]"), function (c) {
+      var note = document.querySelector('[data-note="' + c.dataset.out + '"]').value.trim();
+      if (c.checked || note) st[c.dataset.out] = { out: c.checked, note: note }; });
+    return st;
+  }
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest("#ov-submit")) return;
+    var st = collectOut(); lsSet(OUTKEY, JSON.stringify(st));
+    var names = { b: "breakfast", l: "lunch", d: "dinner" }, parts = [];
+    D.forEach(function (d) { SLOTS.forEach(function (s) { var o = st[d.id + "-" + s[0]]; if (o && o.out) parts.push(d.label + " " + names[s[0]] + " out" + (o.note ? " (" + o.note + ")" : "")); }); });
+    var start = new Date(+D[0].date.slice(0, 4), +D[0].date.slice(5, 7) - 1, +D[0].date.slice(8, 10));
+    var text = "Week of " + start.getDate() + " " + start.toLocaleDateString("en-AU", { month: "short" }) + " changes: " + (parts.length ? parts.join("; ") : "none");
+    overview(); render(cur); weekTable();
+    var fb = function () { $("ov-fallback").hidden = false; var ta = $("ov-text"); ta.value = text; ta.focus(); ta.select(); toast("Saved. Copy the text below"); };
+    if (navigator.clipboard && window.isSecureContext !== false) navigator.clipboard.writeText(text).then(function () { toast("Copied, paste this to Chef"); }, fb); else fb();
+  });
 
   function restore() {
     [].forEach.call(document.querySelectorAll("input[data-k]"), function (el) {
@@ -63,15 +189,22 @@
       var b = e.target.closest("button"); if (!b) return;
       var i = +b.dataset.i; cur = i; render(i); history.replaceState(null, "", "#" + D[i].id);
     };
+    weekTable();
+  }
+  function weekTable() {
+    var st = outState();
     $("week-table").innerHTML = "<table><thead><tr><th>Day</th><th>Lunch</th><th>Dinner</th></tr></thead><tbody>" + D.map(function (d) {
-      var cell = function (id, alt) { if (!id) return '<span class="muted">—</span>'; var m = M[id];
+      var cell = function (id, alt, ok) { var o = st[ok]; if (o && o.out) return '<span class="out-cell"><s>' + (id ? M[id].name : "Meal") + '</s> Out' + (o.note ? ": " + esc(o.note) : "") + "</span>";
+        if (!id) return '<span class="muted">—</span>'; var m = M[id];
         return m.name + (alt ? " " + alt : "") + (m.uses.length ? '<br><span class="muted small">' + m.uses.map(function (u) { return C[u].name.split(" (")[0].split(",")[0]; }).join(", ") + "</span>" : ""); };
-      return "<tr><th scope=\"row\">" + dayName[d.id] + (d.cook ? '<br><span class="muted small">cook</span>' : "") + "</th><td>" + cell(d.l) + "</td><td>" + cell(d.d, d.dAlt) + "</td></tr>";
+      return "<tr><th scope=\"row\">" + dayName[d.id] + (d.cook ? '<br><span class="muted small">cook</span>' : "") + "</th><td>" + cell(d.l, null, d.id + "-l") + "</td><td>" + cell(d.d, d.dAlt, d.id + "-d") + "</td></tr>";
     }).join("") + "</tbody></table><p class=\"small muted\">Breakfast: overnight oats, except eggs on toast on Sun. These are suggestions; swap any meals.</p>";
+  }
+  function refParts() {
     $("fridge").innerHTML = '<ul class="plain fridge">' + Object.keys(C).map(function (k) { var c = C[k];
       return "<li><span>" + c.name + '</span><span class="muted">' + dayName[c.made] + " → " + c.keeps + "</span></li>"; }).join("") + "</ul>";
-    $("all-recipes").innerHTML = Object.keys(C).map(function (k) { return "<details><summary>" + C[k].name + "</summary>" + recipe(k, false) + "</details>"; }).join("") +
-      Object.keys(M).filter(function (k) { return k !== "birthday"; }).map(function (k) { return "<details><summary>" + M[k].name + "</summary>" + meal("Meal", k) + "</details>"; }).join("");
+    $("all-recipes").innerHTML = Object.keys(C).map(function (k) { return '<details id="ref-c-' + k + '"><summary>' + C[k].name + "</summary>" + recipe(k, false) + "</details>"; }).join("") +
+      Object.keys(M).filter(function (k) { return k !== "birthday"; }).map(function (k) { return '<details id="ref-m-' + k + '"><summary>' + M[k].name + "</summary>" + meal("Meal", k) + "</details>"; }).join("");
     $("topup").innerHTML = list(W.topup, false);
     $("freezer").innerHTML = list(W.freezer, false);
     $("repeat").innerHTML = Object.keys(W.repeat).map(function (g) { return "<h3 class=\"grp\">" + g + "</h3>" + list(W.repeat[g], false); }).join("");
@@ -88,12 +221,12 @@
     return 0;
   }
 
-  staticParts();
+  staticParts(); refParts(); overview();
   cur = pick();
   render(cur);
 
   /* ---- Section shortcuts (left) ---- */
-  var SECTIONS = [["today-title","Today"],["week","Rest of the week"],["fridge","In the fridge"],["recipes","All recipes"],["shop","Shopping & freezer"]];
+  var SECTIONS = [["today-title","Today"],["overview","Week overview"],["week","Rest of the week"],["fridge","In the fridge"],["recipes","All recipes"],["shop","Shopping & freezer"]];
   if ($("archive")) SECTIONS.push(["archive","Past weeks"]);
   var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   function go(id) { var el = $(id); if (!el) return; el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
