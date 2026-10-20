@@ -59,7 +59,14 @@
     if (d.nightBefore && d.nightBefore.length) h += '<div class="nightb"><strong>Tonight, for tomorrow\u2019s cook</strong>' + list(d.nightBefore, true, "nb:" + W.range + d.id) + "</div>";
     var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b, null, d.id + "-b") + meal("Lunch", d.l, null, d.id + "-l") + meal("Dinner", d.d, d.dAlt, d.id + "-d") +
       '<div class="meal"><p class="slot">Snacks</p><p>' + W.snacks + "</p></div></section>";
-    if (d.cook) { h += cookSection(d); h += meals; } else h += meals;
+    if (d.cook) {
+      var done = cookComplete(d), open = !done || lsGet(ckey(d), "0") === "1";
+      wasComplete[d.id] = done;
+      var wrap = '<div class="cookwrap' + (open ? "" : " collapsed") + '" id="cook-sec">' +
+        (done ? '<button type="button" class="cookbar" id="cookbar" aria-expanded="' + open + '" aria-controls="cookbody"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="cb-t">Cook day done: ' + d.cook.make.length + ' recipes packed</span><span class="cb-a">' + (open ? "Hide" : "Tap to view") + "</span></button>" : "") +
+        '<div class="cookbody" id="cookbody"' + (open ? "" : " inert") + '><div class="rin">' + cookSection(d) + "</div></div></div>";
+      h += open ? wrap + meals : meals + wrap;
+    } else h += meals;
     $("today").innerHTML = h;
     $("today-title").textContent = (d.cook ? "Cook day · " : "") + dayName[d.id];
     restore(); tickTimers();
@@ -132,9 +139,11 @@
     lsSet(rk("rdone", d, cb.dataset.done), cb.checked ? "1" : "0");
     card.classList.toggle("done", cb.checked);
     var ids = d.cook.make, n = ids.filter(function (id) { return lsGet(rk("rdone", d, id), "0") === "1"; }).length;
+    if (!cb.checked) checkCook();
     $("rprog").textContent = progText(n, ids.length); $("rmeter").style.width = (100 * n / ids.length) + "%";
     if (cb.checked) {
       celebrate(cb.nextElementSibling, n === ids.length, card);
+      checkCook();
       setTimeout(function () { setOpen(card, false); var next = document.querySelector(".rcard:not(.done)"); if (next && !document.querySelector(".rcard.open")) setOpen(next, true); }, 450);
     }
   });
@@ -252,10 +261,49 @@
     if (navigator.clipboard && window.isSecureContext !== false) navigator.clipboard.writeText(text).then(function () { toast("Copied, paste this to Chef"); }, fb); else fb();
   });
 
+  /* ---- Cook-day completion ---- */
+  var wasComplete = {};
+  function ckey(d) { return "cookopen:" + W.range + ":" + d.id; }
+  function cookComplete(d) {
+    if (!d.cook) return false;
+    var recipes = d.cook.make.every(function (id) { return lsGet("rdone:" + W.range + ":" + d.id + ":" + id, "0") === "1"; });
+    if (recipes) return true;
+    var p = d.cook.plan; if (!p) return false;
+    var k = "tick:" + W.range + ":" + d.id + ":", keys = [];
+    Object.keys(p.getout).forEach(function (g) { p.getout[g].forEach(function (_, i) { keys.push(k + "get" + g + "-" + i); }); });
+    p.weigh.forEach(function (_, i) { keys.push(k + "weigh-" + i); });
+    p.bulk.forEach(function (_, i) { keys.push(k + "bulk-" + i); });
+    p.cook.forEach(function (_, i) { keys.push(k + "cook-" + i); });
+    p.pack.forEach(function (_, i) { keys.push(k + "pack-" + i); });
+    return keys.every(function (x) { return lsGet(x, "0") === "1"; });
+  }
+  var collapseT = null;
+  function checkCook() {
+    var d = D[cur]; if (!d.cook) return;
+    var now = cookComplete(d);
+    if (now && !wasComplete[d.id]) {
+      wasComplete[d.id] = true; lsSet(ckey(d), "0");
+      clearTimeout(collapseT);
+      collapseT = setTimeout(function () {
+        var w = $("cook-sec"); if (!w) return;
+        w.classList.add("collapsed");
+        setTimeout(function () { render(cur); var b = $("cookbar"); if (b) b.focus({ preventScroll: true }); }, 400);
+      }, 1500);
+    } else if (!now && wasComplete[d.id]) { clearTimeout(collapseT); wasComplete[d.id] = false; render(cur); }
+  }
+  function setCookOpen(open) {
+    var d = D[cur]; lsSet(ckey(d), open ? "1" : "0");
+    var w = $("cook-sec"), b = $("cookbar"), body = $("cookbody");
+    if (open && w.nextElementSibling === null) { render(cur); w = $("cook-sec"); w.classList.add("collapsed"); body = $("cookbody"); b = $("cookbar"); void w.offsetWidth; }
+    w.classList.toggle("collapsed", !open); b.setAttribute("aria-expanded", open); b.querySelector(".cb-a").textContent = open ? "Hide" : "Tap to view";
+    if (open) body.removeAttribute("inert"); else body.setAttribute("inert", "");
+  }
+  document.addEventListener("click", function (e) { if (e.target.closest("#cookbar")) setCookOpen($("cook-sec").classList.contains("collapsed")); });
+
   function restore() {
     [].forEach.call(document.querySelectorAll("input[data-k]"), function (el) {
       try { el.checked = localStorage.getItem(el.dataset.k) === "1"; } catch (e) {}
-      el.onchange = function () { try { localStorage.setItem(el.dataset.k, el.checked ? "1" : "0"); } catch (e) {} };
+      el.onchange = function () { try { localStorage.setItem(el.dataset.k, el.checked ? "1" : "0"); } catch (e) {} checkCook(); };
     });
   }
 
@@ -310,10 +358,15 @@
   var SECTIONS = [["today-title","Today"],["overview","Week overview"],["week","Rest of the week"],["fridge","In the fridge"],["recipes","All recipes"],["shop","Shopping & freezer"]];
   if ($("archive")) SECTIONS.push(["archive","Past weeks"]);
   var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function go(id) { var el = $(id); if (!el) return; el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  function go(id) { if (id === "cook-sec" && $("cook-sec") && $("cook-sec").classList.contains("collapsed")) setCookOpen(true);
+    var el = $(id); if (!el) return; el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     el.setAttribute("tabindex", "-1"); el.focus({ preventScroll: true }); }
-  var links = SECTIONS.map(function (s) { return '<li><a href="#' + s[0] + '" data-go="' + s[0] + '">' + s[1] + "</a></li>"; }).join("");
-  $("jump-list").innerHTML = links; if ($("side-list")) $("side-list").innerHTML = links;
+  function buildLinks() {
+    var sec = SECTIONS.slice(); if (D[cur].cook) sec.splice(1, 0, ["cook-sec", "Cook plan"]);
+    var links = sec.map(function (s) { return '<li><a href="#' + s[0] + '" data-go="' + s[0] + '">' + s[1] + "</a></li>"; }).join("");
+    $("jump-list").innerHTML = links; if ($("side-list")) $("side-list").innerHTML = links;
+  }
+  buildLinks(); var _render = render; render = function (i) { _render(i); buildLinks(); };
   document.addEventListener("click", function (e) {
     var a = e.target.closest("a[data-go]"); if (!a) return;
     e.preventDefault(); closeAll(); go(a.dataset.go);
