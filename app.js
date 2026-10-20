@@ -22,7 +22,7 @@
   function meal(slot, id, alt) {
     if (!id) return '<div class="meal"><p class="slot">' + slot + '</p><p class="muted">Use whatever you have; prep comes first today.</p></div>';
     var m = M[id];
-    var uses = m.uses.length ? '<p class="uses">Uses: ' + m.uses.map(function (u) { return C[u].name.replace(" (Pestle)", "").replace(" (Jade's)", ""); }).join(", ") + "</p>" : "";
+    var uses = m.uses.length ? '<p class="uses">Uses: ' + m.uses.map(function (u) { return C[u].name.replace(" (Pestle)", "").replace(" (house recipe)", ""); }).join(", ") + "</p>" : "";
     return '<div class="meal"><p class="slot">' + slot + (m.time ? ' <span class="muted">· ' + m.time + "</span>" : "") + "</p>" +
       "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + uses +
       list(m.items, false) + (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "") + nut(m.nut) + "</div>";
