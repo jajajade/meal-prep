@@ -8,17 +8,17 @@
   "background_color": "#f4f5f1",
   "icons": [
     {
-      "src": "icons/icon-192.png?v=23903a8a4d",
+      "src": "icons/icon-192.png?v=64edcb4aad",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icons/icon-512.png?v=23903a8a4d",
+      "src": "icons/icon-512.png?v=64edcb4aad",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "favicon.svg?v=23903a8a4d",
+      "src": "favicon.svg?v=64edcb4aad",
       "sizes": "any",
       "type": "image/svg+xml"
     }

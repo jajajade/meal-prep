@@ -471,3 +471,4 @@ section > h2{margin-top:28px}
 .k.fresh{background:var(--acc)}
 .ov-meal .out-note{font:700 .85rem var(--text);letter-spacing:.02em;margin-left:6px}
 .eff.cook{color:#a8341f}
+.top{background:var(--bg)!important;-webkit-backdrop-filter:none;backdrop-filter:none}
