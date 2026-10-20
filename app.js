@@ -53,9 +53,12 @@
   function render(i) {
     var d = D[i], h = "";
     [].forEach.call(document.querySelectorAll(".days button"), function (b, j) { b.setAttribute("aria-pressed", j === i ? "true" : "false"); });
-    var rem = d.remind && d.remind.length, gro = d.grocery && d.grocery.length;
-    if (rem) h += '<div class="remind"><strong>Reminder</strong>' + list(d.remind, false) + "</div>";
-    if (gro) h += ('<div class="grocery"><strong><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14l-1.4 11.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z M9 7V6a3 3 0 0 1 6 0v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Groceries</strong>' + list(d.grocery, false) + "</div>");
+    var BAG = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14l-1.4 11.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z M9 7V6a3 3 0 0 1 6 0v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+    if (d.remind && d.remind.length) h += tickBox(d.id + ":remind", "remind", "Reminder", d.remind, "All reminders sorted. Nice!");
+    var g = d.grocery;
+    if (g) { if (Array.isArray(g)) g = { type: "topup", title: "Groceries", items: g };
+      if (g.items.length) h += tickBox(d.id + ":grocery", "grocery", BAG + "Groceries" + (g.title ? '<span class="tb-sub">' + g.title + "</span>" : ""), g.items,
+        g.type === "main" ? "Big shop done. Next week\u2019s sorted!" : "Shopping sorted. Nice one!"); }
     if (d.nightBefore && d.nightBefore.length) h += '<div class="nightb"><strong>Tonight, for tomorrow\u2019s cook</strong>' + list(d.nightBefore, true, "nb:" + W.range + d.id) + "</div>";
     var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b, null, d.id + "-b") + meal("Lunch", d.l, null, d.id + "-l") + meal("Dinner", d.d, d.dAlt, d.id + "-d") +
       '<div class="meal"><p class="slot">Snacks</p><p>' + W.snacks + "</p></div></section>";
@@ -65,7 +68,7 @@
       var wrap = '<div class="cookwrap' + (open ? "" : " collapsed") + '" id="cook-sec">' +
         (done ? '<button type="button" class="cookbar" id="cookbar" aria-expanded="' + open + '" aria-controls="cookbody"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="cb-t">Cook day done: ' + d.cook.make.length + ' recipes packed</span><span class="cb-a">' + (open ? "Hide" : "Tap to view") + "</span></button>" : "") +
         '<div class="cookbody" id="cookbody"' + (open ? "" : " inert") + '><div class="rin">' + cookSection(d) + "</div></div></div>";
-      h += open ? wrap + meals : meals + wrap;
+      h += wrap + meals;
     } else h += meals;
     $("today").innerHTML = h;
     $("today-title").textContent = (d.cook ? "Cook day · " : "") + dayName[d.id];
@@ -261,6 +264,44 @@
     if (navigator.clipboard && window.isSecureContext !== false) navigator.clipboard.writeText(text).then(function () { toast("Copied, paste this to Chef"); }, fb); else fb();
   });
 
+  /* ---- Tickable reminder boxes ---- */
+  function tbk(id, i) { return "tb:" + W.range + ":" + id + ":" + i; }
+  function tbAll(id, n) { for (var i = 0; i < n; i++) if (lsGet(tbk(id, i), "0") !== "1") return false; return true; }
+  var TICK = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function tickBox(id, cls, title, items, msg) {
+    var done = tbAll(id, items.length), open = !done || lsGet("tbopen:" + W.range + ":" + id, "0") === "1";
+    return '<div class="tb ' + cls + (done ? " is-done" : "") + (open ? "" : " collapsed") + '" data-tb="' + id + '" data-n="' + items.length + '">' +
+      '<button type="button" class="tb-bar" aria-expanded="' + open + '"' + (done ? "" : " hidden") + ">" + TICK + '<span class="tb-msg">' + msg + '</span><span class="tb-a">' + (open ? "Hide" : "Show") + "</span></button>" +
+      '<div class="tb-body"' + (open ? "" : " inert") + '><div class="rin"><strong class="tb-title">' + title + '</strong><ul class="check tb-list">' +
+      items.map(function (t, i) { var on = lsGet(tbk(id, i), "0") === "1";
+        return '<li><label><input type="checkbox" data-tbk="' + i + '"' + (on ? " checked" : "") + "><span>" + t + "</span></label></li>"; }).join("") +
+      "</ul></div></div></div>";
+  }
+  function tbOpen(box, open) {
+    box.classList.toggle("collapsed", !open);
+    var b = box.querySelector(".tb-bar"); b.setAttribute("aria-expanded", open); b.querySelector(".tb-a").textContent = open ? "Hide" : "Show";
+    var body = box.querySelector(".tb-body"); if (open) body.removeAttribute("inert"); else body.setAttribute("inert", "");
+    lsSet("tbopen:" + W.range + ":" + box.dataset.tb, open ? "1" : "0");
+  }
+  document.addEventListener("change", function (e) {
+    var cb = e.target.closest("[data-tbk]"); if (!cb) return;
+    var box = cb.closest("[data-tb]"), id = box.dataset.tb, n = +box.dataset.n;
+    lsSet(tbk(id, cb.dataset.tbk), cb.checked ? "1" : "0");
+    var li = cb.closest("li");
+    [].forEach.call(document.querySelectorAll('[data-tb="' + id + '"] [data-tbk="' + cb.dataset.tbk + '"]'), function (x) { x.checked = cb.checked; });
+    if (cb.checked) { li.classList.remove("pop"); void li.offsetWidth; li.classList.add("pop"); }
+    var all = tbAll(id, n);
+    [].forEach.call(document.querySelectorAll('[data-tb="' + id + '"]'), function (bx) {
+      var bar = bx.querySelector(".tb-bar");
+      if (all && !bx.classList.contains("is-done")) {
+        bx.classList.add("is-done"); bar.hidden = false;
+        if (bx === box) celebrate(cb.nextElementSibling || cb, false, bx);
+        setTimeout(function () { tbOpen(bx, false); }, 700);
+      } else if (!all && bx.classList.contains("is-done")) { bx.classList.remove("is-done"); bar.hidden = true; tbOpen(bx, true); }
+    });
+  });
+  document.addEventListener("click", function (e) { var b = e.target.closest(".tb-bar"); if (b) { var bx = b.closest("[data-tb]"); tbOpen(bx, bx.classList.contains("collapsed")); } });
+
   /* ---- Cook-day completion ---- */
   var wasComplete = {};
   function ckey(d) { return "cookopen:" + W.range + ":" + d.id; }
@@ -287,14 +328,13 @@
       collapseT = setTimeout(function () {
         var w = $("cook-sec"); if (!w) return;
         w.classList.add("collapsed");
-        setTimeout(function () { render(cur); var b = $("cookbar"); if (b) b.focus({ preventScroll: true }); }, 400);
+        setTimeout(function () { render(cur); }, 400);
       }, 1500);
     } else if (!now && wasComplete[d.id]) { clearTimeout(collapseT); wasComplete[d.id] = false; render(cur); }
   }
   function setCookOpen(open) {
     var d = D[cur]; lsSet(ckey(d), open ? "1" : "0");
     var w = $("cook-sec"), b = $("cookbar"), body = $("cookbody");
-    if (open && w.nextElementSibling === null) { render(cur); w = $("cook-sec"); w.classList.add("collapsed"); body = $("cookbody"); b = $("cookbar"); void w.offsetWidth; }
     w.classList.toggle("collapsed", !open); b.setAttribute("aria-expanded", open); b.querySelector(".cb-a").textContent = open ? "Hide" : "Tap to view";
     if (open) body.removeAttribute("inert"); else body.setAttribute("inert", "");
   }
@@ -334,7 +374,7 @@
       '<p class="small muted">Easiest: divide each batch into its portions (or containers) when packing, so each meal is just grab-and-go. Portions are the same for Jade and Matteo; Matteo adds a little extra rice, pasta or toast.</p>';
     $("all-recipes").innerHTML = Object.keys(C).map(function (k) { return '<details id="ref-c-' + k + '"><summary>' + C[k].name + "</summary>" + recipe(k, false) + "</details>"; }).join("") +
       Object.keys(M).filter(function (k) { return k !== "birthday"; }).map(function (k) { return '<details id="ref-m-' + k + '"><summary>' + M[k].name + "</summary>" + meal("Meal", k) + "</details>"; }).join("");
-    $("topup").innerHTML = list(W.topup, false);
+    $("topup").innerHTML = tickBox("shop:topup", "grocery plainbox", "Buy this week", W.topup, "Top-ups bought. Nice one!");
     $("freezer").innerHTML = list(W.freezer, false);
     $("repeat").innerHTML = Object.keys(W.repeat).map(function (g) { return "<h3 class=\"grp\">" + g + "</h3>" + list(W.repeat[g], false); }).join("");
     $("targets").textContent = W.targets + " All nutrition figures are estimates.";

@@ -45,3 +45,8 @@ Ticks, the 1/2-cook choice and timers persist in localStorage.
 ## Portions
 - Each component can have `portion: { g, measure, n, batch }`: cooked grams per portion, a household measure, the number of portions in the batch, and the batch yield. Its `nut` is per portion.
 - Each meal has `qty: { componentId: portions }` (default 1). The page shows e.g. "Gochujang chicken, ~65 g (about ⅔ palm)", and meal `nut` should equal the sum of its parts plus extras.
+
+## Tickable reminders
+- `remind: ["..."]` and `grocery` items are checkboxes. When every item is ticked, the box collapses into a done bar (unticking re-expands it), and ticks persist per day.
+- `grocery` can be a list of strings or `{ type: "topup" | "main", title, items: [...] }`. The type picks the done message.
+- The Shopping section's `topup` list works the same way.
