@@ -41,3 +41,7 @@ Ticks, the 1/2-cook choice and timers persist in localStorage.
 
 ## Icons
 `favicon.svg` is the source. The PNGs in `icons/` and `favicon.ico` were rendered from it with headless Chrome + ffmpeg. `manifest.webmanifest` lives at the site root; week pages link to it with `../` paths.
+
+## Portions
+- Each component can have `portion: { g, measure, n, batch }`: cooked grams per portion, a household measure, the number of portions in the batch, and the batch yield. Its `nut` is per portion.
+- Each meal has `qty: { componentId: portions }` (default 1). The page shows e.g. "Gochujang chicken, ~65 g (about ⅔ palm)", and meal `nut` should equal the sum of its parts plus extras.

@@ -28,6 +28,14 @@
     return st;
   }
   function esc(t) { return String(t || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function frac(q) { return q === 1.5 ? "1½" : q === 0.5 ? "½" : String(q); }
+  function amt(u, q) {
+    var p = C[u].portion; q = q || 1; if (!p) return "";
+    var g = Math.round(p.g * q / 5) * 5;
+    return (u === "eggs" ? (q === 1 ? "1 egg" : frac(q) + " eggs") : "~" + g + " g (" + (q === 1 ? p.measure : frac(q) + " × " + p.measure) + ")");
+  }
+  function short(u) { return C[u].name.split(" (")[0].split(",")[0]; }
+  function usesList(m) { return m.uses.map(function (u) { return short(u) + ", " + amt(u, m.qty && m.qty[u]); }); }
   function isPestle(id) { var m = M[id]; return !!m && m.uses.some(function (u) { return /\(Pestle\)/.test(C[u].name); }); }
 
   function meal(slot, id, alt, okey) {
@@ -35,10 +43,11 @@
     if (o && o.out) return '<div class="meal out"><p class="slot">' + slot + '</p><h3><s>' + (id ? M[id].name : "Planned meal") + '</s></h3><p class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</p></div>";
     if (!id) return '<div class="meal"><p class="slot">' + slot + '</p><p class="muted">Use whatever you have; prep comes first today.</p></div>';
     var m = M[id];
-    var uses = m.uses.length ? '<p class="uses">Uses: ' + m.uses.map(function (u) { return C[u].name.replace(" (Pestle)", "").replace(" (Jade's)", ""); }).join(", ") + "</p>" : "";
+    var uses = m.uses.length ? '<p class="uses-h">From the fridge (per person):</p><ul class="uses">' + usesList(m).map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
     return '<div class="meal"><p class="slot">' + slot + (m.time ? ' <span class="muted">· ' + m.time + "</span>" : "") + "</p>" +
       "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + uses +
-      list(m.items, false) + (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "") + nut(m.nut) + "</div>";
+      (function () { var extra = m.uses.length ? m.items.filter(function (t) { return !/^(1|1½) portions? |^1 jammy egg$/.test(t); }) : m.items;
+        return extra.length ? (m.uses.length ? '<p class="uses-h">Plus:</p>' : "") + list(extra.map(function (t) { return t.replace(/^1 jammy egg AND /, ""); }), false) : ""; })() + (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "") + nut(m.nut) + "</div>";
   }
 
   function render(i) {
@@ -212,7 +221,7 @@
       if (!d) { h += '<p class="muted small">Not in this week\u2019s plan.</p></div>'; continue; }
       SLOTS.forEach(function (s) {
         var id = d[s[0]], ok = d.id + "-" + s[0], o = st[ok] || {}, m = id && M[id];
-        var refs = m ? m.uses.map(function (u) { return '<a href="#ref-c-' + u + '" data-ref="ref-c-' + u + '">' + C[u].name.split(" (")[0].split(",")[0] + "</a>"; }) : [];
+        var refs = m ? m.uses.map(function (u) { return '<a href="#ref-c-' + u + '" data-ref="ref-c-' + u + '">' + short(u) + "</a> " + amt(u, m.qty && m.qty[u]); }) : [];
         if (m && m.items.length && id !== "birthday") refs.unshift('<a href="#ref-m-' + id + '" data-ref="ref-m-' + id + '">How to assemble</a>');
         h += '<div class="ov-slot' + (o.out ? " out" : "") + '"><p class="slot">' + s[1] + "</p>" +
           '<p class="ov-meal">' + (o.out ? "<s>" : "") + (m ? m.name : '<span class="muted">Nothing planned</span>') + (o.out ? "</s>" : "") + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "") + "</p>" +
@@ -265,13 +274,16 @@
     $("week-table").innerHTML = "<table><thead><tr><th>Day</th><th>Lunch</th><th>Dinner</th></tr></thead><tbody>" + D.map(function (d) {
       var cell = function (id, alt, ok) { var o = st[ok]; if (o && o.out) return '<span class="out-cell"><s>' + (id ? M[id].name : "Meal") + '</s> Out' + (o.note ? ": " + esc(o.note) : "") + "</span>";
         if (!id) return '<span class="muted">—</span>'; var m = M[id];
-        return m.name + (alt ? " " + alt : "") + (m.uses.length ? '<br><span class="muted small">' + m.uses.map(function (u) { return C[u].name.split(" (")[0].split(",")[0]; }).join(", ") + "</span>" : ""); };
+        return m.name + (alt ? " " + alt : "") + (m.uses.length ? '<br><span class="muted small">' + usesList(m).join("; ") + "</span>" : ""); };
       return "<tr><th scope=\"row\">" + dayName[d.id] + (d.cook ? '<br><span class="muted small">cook</span>' : "") + "</th><td>" + cell(d.l, null, d.id + "-l") + "</td><td>" + cell(d.d, d.dAlt, d.id + "-d") + "</td></tr>";
     }).join("") + "</tbody></table><p class=\"small muted\">Breakfast: overnight oats, except eggs on toast on Sun. These are suggestions; swap any meals.</p>";
   }
   function refParts() {
     $("fridge").innerHTML = '<ul class="plain fridge">' + Object.keys(C).map(function (k) { var c = C[k];
-      return "<li><span>" + c.name + '</span><span class="muted">' + dayName[c.made] + " → " + c.keeps + "</span></li>"; }).join("") + "</ul>";
+      var p = c.portion;
+      return '<li><div class="fr-top"><span>' + c.name + '</span><span class="muted">' + dayName[c.made] + " → " + c.keeps + "</span></div>" +
+        (p ? '<p class="fr-por">Batch ' + p.batch + " · " + p.n + " portions · " + (k === "eggs" ? "1 egg each" : amt(k, 1) + " each") + "</p>" : "") + "</li>"; }).join("") + "</ul>" +
+      '<p class="small muted">Easiest: divide each batch into its portions (or containers) when packing, so each meal is just grab-and-go. Portions are the same for Jade and Matteo; Matteo adds a little extra rice, pasta or toast.</p>';
     $("all-recipes").innerHTML = Object.keys(C).map(function (k) { return '<details id="ref-c-' + k + '"><summary>' + C[k].name + "</summary>" + recipe(k, false) + "</details>"; }).join("") +
       Object.keys(M).filter(function (k) { return k !== "birthday"; }).map(function (k) { return '<details id="ref-m-' + k + '"><summary>' + M[k].name + "</summary>" + meal("Meal", k) + "</details>"; }).join("");
     $("topup").innerHTML = list(W.topup, false);
