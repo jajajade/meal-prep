@@ -38,13 +38,21 @@
   function usesList(m) { return m.uses.map(function (u) { return short(u) + ", " + amt(u, m.qty && m.qty[u]); }); }
   function isPestle(id) { var m = M[id]; return !!m && m.uses.some(function (u) { return /\(Pestle\)/.test(C[u].name); }); }
 
+  var PAN = '<svg class="ic" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 12h13a0 0 0 0 1 0 0v1a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5zM16 13h5M8 8c0-1.2 1-1.2 1-2.4M12 8c0-1.2 1-1.2 1-2.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function effort(m, slot) {
+    if (!m || !m.effort) return "";
+    var mins = m.cookMins ? " · " + m.cookMins + " min" : "";
+    if (m.effort === "cook") return '<span class="eff cook">' + PAN + (/dinner/i.test(slot || "") ? "Cook tonight" : "Cook fresh") + mins + "</span>";
+    return '<span class="eff">Assemble' + mins + "</span>";
+  }
+  function freshDay(d) { var x = d.d && M[d.d], o = outState()[d.id + "-d"]; return !!(x && x.effort === "cook" && !(o && o.out)); }
   function meal(slot, id, alt, okey) {
     var o = okey && outState()[okey];
     if (o && o.out) return '<div class="meal out"><h3><s>' + (id ? M[id].name : "Planned meal") + '</s></h3><p class="slot">' + slot + '</p><p class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</p></div>";
     if (!id) return '<div class="meal"><h3>Nothing planned</h3><p class="slot">' + slot + '</p><p class="muted">Use whatever you have; prep comes first today.</p></div>';
     var m = M[id];
     var uses = m.uses.length ? '<p class="uses-h">From the fridge (per person):</p><ul class="uses">' + usesList(m).map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
-    return '<div class="meal">' + "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + '<p class="slot">' + slot + (m.time ? ' <span class="muted">· ' + m.time + "</span>" : "") + "</p>" + uses +
+    return '<div class="meal">' + "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + '<p class="slot">' + slot + " " + (m.effort ? effort(m, slot) : (m.time ? '<span class="muted">· ' + m.time + "</span>" : "")) + "</p>" + uses +
       (function () { var extra = m.uses.length ? m.items.filter(function (t) { return !/^(1|1½) portions? |^1 jammy egg$/.test(t); }) : m.items;
         return extra.length ? (m.uses.length ? '<p class="uses-h">Plus:</p>' : "") + list(extra.map(function (t) { return t.replace(/^1 jammy egg AND /, ""); }), false) : ""; })() + (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "") + nut(m.nut) + "</div>";
   }
@@ -224,7 +232,7 @@
   var SLOTS = [["b", "Breakfast"], ["l", "Lunch"], ["d", "Dinner"]];
   function overview() {
     var st = outState();
-    var h = '<p class="small muted">Meals and portions for each day. Tick a meal if you\u2019re eating out or have other plans, add a note, then press Submit.</p><div class="ov">';
+    var h = '<p class="small muted">Meals and portions for each day. Tick a meal if you\u2019re eating out or have other plans; it saves straight away. Submit copies a summary to send Chef.</p><p class="small muted ov-key">' + effort({ effort: "cook" }, "Dinner") + ' needs a pan or oven on the night. ' + effort({ effort: "assemble" }) + ' is reheat and plate.</p><div class="ov">';
     D.forEach(function (d) {
       var title = parse(d.date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
       h += '<div class="ov-day"><h2 class="ov-h"><a href="#today/' + d.id + '" class="ov-daylink">' + title + "</a>" + (d.cook ? ' <span class="tag">cook day</span>' : "") + "</h2>";
@@ -233,7 +241,7 @@
         var refs = m ? m.uses.map(function (u) { return '<a href="#recipes/c-' + u + '">' + short(u) + "</a> " + amt(u, m.qty && m.qty[u]); }) : [];
         if (m && m.items.length && id !== "birthday") refs.unshift('<a href="#recipes/m-' + id + '">How to assemble</a>');
         h += '<div class="ov-slot' + (o.out ? " out" : "") + '"><p class="slot">' + s[1] + "</p>" +
-          '<p class="ov-meal">' + (o.out ? "<s>" : "") + (m ? m.name : '<span class="muted">Nothing planned</span>') + (o.out ? "</s>" : "") + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "") + (o.out ? ' <span class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</span>" : "") + "</p>" +
+          '<p class="ov-meal">' + (o.out ? "<s>" : "") + (m ? m.name : '<span class="muted">Nothing planned</span>') + (o.out ? "</s>" : "") + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "") + (m && !o.out && m.effort ? "<br>" + effort(m, s[1]) : "") + (o.out ? ' <span class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</span>" : "") + "</p>" +
           (refs.length ? '<ul class="ov-refs">' + refs.map(function (r) { return "<li>" + r + "</li>"; }).join("") + "</ul>" : "") +
           '<label class="ov-out"><input type="checkbox" data-out="' + ok + '"' + (o.out ? " checked" : "") + "> Eating out / other plans</label>" +
           '<label class="ov-note"><span class="sr">Note for ' + title + " " + s[1] + '</span><input type="text" data-note="' + ok + '" value="' + esc(o.note) + '" placeholder="Note (optional)" maxlength="60"></label></div>';
@@ -249,6 +257,11 @@
       if (c.checked || note) st[c.dataset.out] = { out: c.checked, note: note }; });
     return st;
   }
+  // Autosave: ticks and notes persist immediately; Submit just builds and copies the summary.
+  document.addEventListener("change", function (e) {
+    if (!e.target.closest("[data-out],[data-note]")) return;
+    try { lsSet(OUTKEY, JSON.stringify(collectOut())); render(cur); } catch (err) { if (window.console) console.error(err); }
+  });
   document.addEventListener("click", function (e) {
     if (!e.target.closest("#ov-submit")) return;
     var st = collectOut(); lsSet(OUTKEY, JSON.stringify(st));
@@ -346,7 +359,7 @@
 
   function staticParts() {
     $("days").innerHTML = D.map(function (d, i) {
-      return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.cook ? '<i>cook</i>' : "") + "</a>";
+      return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.cook ? '<i>cook</i>' : "") + (freshDay(d) ? '<em class="fdot" title="Cooking fresh tonight"></em>' : "") + "</a>";
     }).join("");
   }
 
@@ -527,12 +540,12 @@
     for (var dd = 1; dd <= days; dd++) {
       var k = iso(new Date(y, m, dd)), label = new Date(y, m, dd).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
       var cls = "day" + (k === todayIso ? " today" : "");
-      if (k in here) { var di = here[k]; cls += " plan" + (D[di].cook ? " cook" : "") + (k === sel ? " sel" : "");
+      if (k in here) { var di = here[k]; cls += " plan" + (D[di].cook ? " cook" : "") + (D[di] && typeof freshDay === "function" && freshDay(D[di]) ? " fresh" : "") + (k === sel ? " sel" : "");
         h += '<button type="button" class="' + cls + '" data-day="' + di + '" aria-label="' + label + (D[di].cook ? ", cook day" : "") + '"' + (k === todayIso ? ' aria-current="date"' : "") + (k === sel ? ' aria-pressed="true"' : "") + ">" + dd + "</button>"; }
       else if (k in other) h += '<a class="' + cls + ' past" href="' + other[k] + '" aria-label="' + label + ', past week">' + dd + "</a>";
       else h += '<button type="button" class="' + cls + '" disabled aria-label="' + label + ', no plan"' + (k === todayIso ? ' aria-current="date"' : "") + ">" + dd + "</button>";
     }
-    h += '</div><p class="cal-key"><span class="k plan"></span>Planned <span class="k cook"></span>Cook day <span class="k today"></span>Today</p>';
+    h += '</div><p class="cal-key"><span class="k plan"></span>Planned <span class="k cook"></span>Cook day <span class="k today"></span>Today <span class="k fresh"></span>Cooking tonight</p>';
     $("cal").innerHTML = h;
   }
   $("cal").addEventListener("click", function (e) {

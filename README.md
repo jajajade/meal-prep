@@ -62,3 +62,12 @@ Ticks, the 1/2-cook choice and timers persist in localStorage.
 - **History:** the `weeks.js` list plus a repeat list.
 - All collapsibles use one pattern (`cx` in app.js): same chevron and animation, with state remembered in localStorage.
 - `build.py` now only copies the newest week page to `index.html` with root paths; History renders from `weeks.js` in app.js.
+
+## Meal effort (fresh cook vs assemble)
+Each meal in `meals` can carry `effort: "cook" | "assemble"` and `cookMins: <number>`.
+- `cook`: needs a pan/oven step on the night beyond reheating (e.g. pan-fried lamb chops, cooking pasta/noodles, fried rice, eggs). Shown as an accent pill with a pan icon, "Cook tonight · 12 min" (dinner) or "Cook fresh · 10 min" (breakfast/lunch), on Today and Week; days whose dinner is a fresh cook get a small accent dot in the day strip and an underline in the calendar.
+- `assemble`: reheat/plate only. Shown as a quiet "Assemble · 5 min" label.
+Derive it from the meal's `steps`: anything that fries, boils or bakes on the night is `cook`.
+
+## Cache-busting
+`python3 build.py` stamps every local asset URL (styles.css, app.js, weeks.js, data files, icons, manifest) with `?v=<content hash>` in all week pages and index.html, so phones never mix new HTML with a cached old app.js/styles.css. Always run it before committing.

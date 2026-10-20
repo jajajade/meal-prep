@@ -271,7 +271,7 @@ body:not([data-view="today"]) .days{display:none}
 .drawer-panel a{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 12px;border-radius:12px;text-decoration:none;color:var(--ink);font-weight:700}
 .drawer-panel a:hover{background:var(--chip)}
 .drawer-panel a[aria-current=page]{background:var(--herb-bg);color:var(--herb)}
-@media (min-width:900px){
+@media (min-width:1024px){
   .tabbar{display:none}
   body{padding-bottom:32px}
   .logo{display:none}
@@ -458,3 +458,15 @@ section > h2{margin-top:28px}
 .sec-h .muted{font-family:var(--text);font-size:.95rem;letter-spacing:0}
 @media (min-width:760px){.ov{column-gap:56px}}
 .fr-top>span:last-child,.fr-top .muted{white-space:nowrap;font-size:.9rem;color:var(--mute)}
+/* effort labels: fresh cook vs assemble */
+.eff{display:inline-flex;align-items:center;gap:5px;font:700 .8rem var(--text);letter-spacing:.02em;text-transform:none;color:var(--mute);vertical-align:middle;white-space:nowrap}
+.eff.cook{color:var(--acc);background:var(--acc-bg);padding:3px 9px 3px 7px;border-radius:999px}
+.eff .ic{flex:none}
+.slot .eff{margin-left:6px}
+.ov-meal .eff{margin-top:6px}
+.days a{position:relative}
+.fdot{position:absolute;top:6px;right:calc(50% - 22px);width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.days a[aria-current=true] .fdot{background:#f08a75}
+.cal-grid .fresh{box-shadow:inset 0 -3px 0 var(--acc)}
+.k.fresh{background:var(--acc)}
+.ov-meal .out-note{font:700 .85rem var(--text);letter-spacing:.02em;margin-left:6px}
