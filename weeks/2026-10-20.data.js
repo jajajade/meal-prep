@@ -2,7 +2,7 @@
 window.WEEK = {
   range: "Tue 20 – Sun 25 Oct 2026",
   title: "Mix-and-match week",
-  targets: "Each day: ~2200–2250 kcal each, 100–110 g protein, ~30 g fibre.",
+  targets: "Each day: Jade ~2200 kcal, Matteo ~2250 kcal (slightly bigger serves), 100–110 g protein, ~30 g fibre.",
   components: {
     chicken: { name: "Gochujang chicken (Pestle)", made: "tue", keeps: "Fri", serves: "4 serves",
       ing: ["520 g chicken thigh fillet, patted dry","1½ tbsp gochujang","1½ tsp sesame oil + 1 tbsp olive oil","1 tbsp sugar (in place of brown sugar)","3 garlic cloves, grated (in place of garlic powder)","½ tsp salt, 1 tsp black pepper","Optional: 1 tsp baking powder for crispness"],
@@ -12,7 +12,7 @@ window.WEEK = {
       ing: ["300 g rice, rinsed","1 tin (420 g) lentils, drained","2 onions, thinly sliced","2 tbsp olive oil","1 tsp cumin, ½ tsp allspice, 1 tsp salt, pepper","600 ml water"],
       steps: ["Sauté the onion in oil with cumin and allspice for 6–8 min until soft.","Add rice, lentils, salt and water. Boil, cover and simmer on low for 15 min.","Rest 5 min with the lid on, then fluff. (Simplified: no soaking, no fried-onion topping, no 30-min steam.)"],
       nut: "~300 kcal · ~9 g protein · ~5 g fibre" },
-    beansalad: { name: "Bean salad (house recipe)", made: "tue", keeps: "Sun", serves: "8 serves (~1 cup)",
+    beansalad: { name: "Bean salad (Jade's)", made: "tue", keeps: "Sun", serves: "8 serves (~1 cup)",
       ing: ["1 tin each cannellini, kidney beans and lentils, drained and rinsed","2 tomatoes, diced","1 carrot, grated","1 cucumber, diced","½ red onion, finely diced","Handful of olives, sliced","3 tbsp olive oil, 2 tbsp red wine vinegar, salt, pepper"],
       steps: ["Mix everything. It tastes better the next day."],
       nut: "~200 kcal · ~7 g protein · ~7 g fibre" },
@@ -69,7 +69,7 @@ window.WEEK = {
     lamb: { name: "Lamb plate", time: "12 min", uses: ["potato","beansalad","yog","greens"],
       items: ["~190 g lamb loin chops each (cooked fresh)","1 serve roast potatoes","1 serve bean salad","1 serve garlic yoghurt","Greens if any are left"],
       steps: ["Season the chops; pan-fry in a hot pan for 3–4 min each side. Rest 3 min.","Reheat the potatoes and plate up."], nut: "~730 kcal · ~43 g protein · ~12 g fibre" },
-    birthday: { name: "Special dinner: your call", time: "", uses: [],
+    birthday: { name: "Matteo's birthday: your call", time: "", uses: [],
       items: ["Eat out, or cook something special"], steps: [], nut: "" }
   },
   snacks: "Pick 2: fruit, a glass of milk, extra bean salad, or yoghurt (~350–400 kcal).",

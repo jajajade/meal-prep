@@ -1,4 +1,4 @@
-# Meal prep site
+# Beanos & Matteo · Meal prep site
 
 Open `index.html` directly. It works from file://, with no server needed.
 
