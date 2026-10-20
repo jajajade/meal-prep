@@ -470,3 +470,4 @@ section > h2{margin-top:28px}
 .cal-grid .fresh{box-shadow:inset 0 -3px 0 var(--acc)}
 .k.fresh{background:var(--acc)}
 .ov-meal .out-note{font:700 .85rem var(--text);letter-spacing:.02em;margin-left:6px}
+.eff.cook{color:#a8341f}
