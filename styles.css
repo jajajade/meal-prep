@@ -604,3 +604,13 @@ ul.uses li::before,.meal ul.plain li::before,.recipe ul.plain li::before,.cx ul.
 .days a.past span,.days a.past b{text-decoration:line-through;text-decoration-thickness:1.5px}
 .days a.past[aria-current=true]{opacity:1}
 .cal-key .k.cook{flex:none;width:6px!important;height:6px!important;min-height:0;padding:0;border-radius:50%}
+
+/* Date strip markers: one slot under the number; cook wins over fresh dot */
+.days a .mk{display:flex;align-items:center;justify-content:center;height:12px;line-height:1;margin-top:2px}
+.days a .fdot,.days a[aria-current=true] .fdot{position:static;display:block;width:5px;height:5px;border-radius:50%;background:var(--acc);opacity:.55;box-shadow:none;border:0}
+.days a[aria-current=true] .fdot{background:#f6b3a6;opacity:.9}
+/* Calendar: cook = solid dot, fresh dinner = soft small dot */
+.cal-grid .fresh{box-shadow:none!important}
+.cal-grid .fresh::after{content:"";position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:var(--acc);opacity:.45}
+.cal-grid .today.fresh::after{background:#f6b3a6;opacity:.9}
+.cal-key .k.fresh{flex:none;width:4px!important;height:4px!important;border-radius:50%;background:var(--acc);opacity:.45}

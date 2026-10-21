@@ -401,7 +401,7 @@
   function staticParts() {
     var nw = new Date(), td = nw.getFullYear() + "-" + ("0" + (nw.getMonth() + 1)).slice(-2) + "-" + ("0" + nw.getDate()).slice(-2);
     $("days").innerHTML = D.map(function (d, i) {
-      return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"' + (d.date < td ? ' class="past"' : "") + '><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.cook ? '<i>cook</i>' : "") + (freshDay(d) ? '<em class="fdot" title="Cooking fresh tonight"></em>' : "") + "</a>";
+      return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"' + (d.date < td ? ' class="past"' : "") + '><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.cook ? '<i class="mk">cook</i>' : freshDay(d) ? '<i class="mk"><em class="fdot" title="Cooking fresh tonight"></em></i>' : '<i class="mk" aria-hidden="true"></i>') + "</a>";
     }).join("");
   }
 
@@ -582,12 +582,12 @@
     for (var dd = 1; dd <= days; dd++) {
       var k = iso(new Date(y, m, dd)), label = new Date(y, m, dd).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
       var cls = "day" + (k === todayIso ? " today" : "");
-      if (k in here) { var di = here[k]; cls += " plan" + (D[di].cook ? " cook" : "") + (D[di] && typeof freshDay === "function" && freshDay(D[di]) ? " fresh" : "") + (k === sel ? " sel" : "");
+      if (k in here) { var di = here[k]; cls += " plan" + (D[di].cook ? " cook" : (typeof freshDay === "function" && freshDay(D[di]) ? " fresh" : "")) + (k === sel ? " sel" : "");
         h += '<button type="button" class="' + cls + '" data-day="' + di + '" aria-label="' + label + (D[di].cook ? ", cook day" : "") + '"' + (k === todayIso ? ' aria-current="date"' : "") + (k === sel ? ' aria-pressed="true"' : "") + ">" + dd + "</button>"; }
       else if (k in other) h += '<a class="' + cls + ' past" href="' + other[k] + '" aria-label="' + label + ', past week">' + dd + "</a>";
       else h += '<button type="button" class="' + cls + '" disabled aria-label="' + label + ', no plan"' + (k === todayIso ? ' aria-current="date"' : "") + ">" + dd + "</button>";
     }
-    h += '</div><p class="cal-key"><span class="ki"><span class="k plan">12</span>Planned</span><span class="ki"><span class="k today">12</span>Today</span><span class="ki"><span class="k cook"></span>Cook day</span></p>';
+    h += '</div><p class="cal-key"><span class="ki"><span class="k today">12</span>Today</span><span class="ki"><span class="k cook"></span>Cook day</span><span class="ki"><span class="k fresh"></span>Fresh dinner</span></p>';
     $("cal").innerHTML = h;
   }
   $("cal").addEventListener("click", function (e) {
