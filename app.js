@@ -467,7 +467,7 @@
     var keys = Object.keys(C).sort(function (x, y) { return (useBy(C[x]) || "9") < (useBy(C[y]) || "9") ? -1 : (useBy(C[x]) || "9") > (useBy(C[y]) || "9") ? 1 : 0; });
     $("fridge").innerHTML = '<ul class="plain fridge">' + keys.map(function (k) { var c = C[k], p = c.portion, n = daysTo(useBy(c)), first = n >= 0 && n <= 1;
       return '<li' + (first ? ' class="use-first"' : "") + '><div class="fr-top"><span class="fr-name"><a href="#recipes/c-' + k + '">' + c.name.replace(" (Pestle)", "") + "</a>" + (/\(Pestle\)/.test(c.name) ? ' <span class="tag p">Pestle</span>' : "") + "</span>" +
-        '<span class="fr-keep">' + (first ? '<span class="use-tag">Use first</span>' : "") + "Keeps to " + c.keeps + "</span></div>" +
+        '<span class="fr-keep">' + (first ? '<span class="use-tag' + (n ? " soon" : "") + '">' + (n ? "Use soon" : "Use first") + "</span>" : "") + "Keeps to " + c.keeps + "</span></div>" +
         (p ? '<p class="fr-por">' + p.n + " portions · " + (k === "eggs" ? "1 egg each" : amt(k, 1) + " each") + '</p><p class="fr-batch">Batch ' + p.batch + " · made " + dayName[c.made] + "</p>" : "") + "</li>"; }).join("") + "</ul>" +
       '<p class="small muted">Easiest: divide each batch into its portions (or containers) when packing, so each meal is just grab-and-go. Portions are the same for Jade and Matteo; Matteo adds a little extra rice, pasta or toast.</p>';
     $("freezer").innerHTML = list(W.freezer, false);
