@@ -40,25 +40,33 @@
   function isPestle(id) { var m = M[id]; return !!m && m.uses.some(function (u) { return /\(Pestle\)/.test(C[u].name); }); }
 
   var PAN = '<svg class="ic" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 12h13a0 0 0 0 1 0 0v1a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5zM16 13h5M8 8c0-1.2 1-1.2 1-2.4M12 8c0-1.2 1-1.2 1-2.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var MERGED = '<a class="eff merged" href="#cook-sec" data-tocook>' + '<svg class="ic" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" transform="rotate(180 12 12)"/></svg>Made during tonight\u2019s cook</a>';
   function effort(m, slot) {
     if (!m || !m.effort) return "";
     var mins = m.cookMins ? " · " + m.cookMins + " min" : "";
     if (m.effort === "cook") return '<span class="eff cook">' + PAN + (/dinner/i.test(slot || "") ? "Cook tonight" : "Cook fresh") + mins + "</span>";
     return '<span class="eff">Assemble' + mins + "</span>";
   }
+  /* Dinner on a cook day: weeknights fold it into the cook ("merged"); weekends keep it separate with a callout ("after").
+     Override per day with cook.dinnerInCook: true/false. */
+  function dinnerMode(d) {
+    var m = d && d.cook && d.d && M[d.d]; if (!m || m.effort !== "cook") return null;
+    if (d.cook.dinnerInCook === true) return "merged"; if (d.cook.dinnerInCook === false) return "after";
+    var wd = parse(d.date).getDay(); return wd >= 1 && wd <= 5 ? "merged" : "after";
+  }
   function freshDay(d) { var x = d.d && M[d.d], o = outState()[d.id + "-d"]; return !!(x && x.effort === "cook" && !(o && o.out)); }
-  function meal(slot, id, alt, okey) {
+  function meal(slot, id, alt, okey, merged) {
     var o = okey && outState()[okey];
     if (o && o.out) return '<div class="meal out"><h3><s>' + (id ? M[id].name : "Planned meal") + '</s></h3><p class="slot">' + slot + '</p><p class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</p></div>";
     if (!id) return '<div class="meal"><h3>Nothing planned</h3><p class="slot">' + slot + '</p><p class="muted">Use whatever you have; prep comes first today.</p></div>';
     var m = M[id];
     var uses = m.uses.length ? '<p class="uses-h">From the fridge (per person):</p><ul class="uses">' + usesList(m).map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
-    return '<div class="meal">' + "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + '<p class="slot">' + slot + " " + (m.effort ? effort(m, slot) : (m.time ? '<span class="muted">· ' + m.time + "</span>" : "")) + "</p>" + uses +
+    return '<div class="meal"' + (/^dinner$/i.test(slot) ? ' id="meal-dinner"' : "") + ">" + "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + '<p class="slot">' + slot + " " + (merged ? MERGED : m.effort ? effort(m, slot) : (m.time ? '<span class="muted">· ' + m.time + "</span>" : "")) + "</p>" + uses +
       (function () { var extra = m.uses.length ? m.items.filter(function (t) { return !/^(1|1½) portions? |^1 jammy egg$/.test(t); }) : m.items;
         return extra.length ? (m.uses.length ? '<p class="uses-h">Plus:</p>' : "") + list(extra.map(function (t) { return t.replace(/^1 jammy egg AND /, ""); }), false) : ""; })() + (m.atWork && /lunch/i.test(slot) ? (function () { var w = lsGet("lunchmode", "work") === "work";
           return '<div class="seg lmode" role="group" aria-label="Where are you eating?"><button type="button" data-lmode="work" aria-pressed="' + w + '">At work</button><button type="button" data-lmode="home" aria-pressed="' + !w + '">At home</button></div>' +
             '<ol class="quick">' + (w ? m.atWork : m.steps).map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>"; })() :
-        (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "")) + nut(m.nut) + "</div>";
+        merged ? '<p class="merged-note">Cooked as part of today\u2019s cook plan, so the steps are in the timeline above. <a href="#cook-sec" data-tocook>Go to the cook</a></p>' : (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "")) + nut(m.nut) + "</div>";
   }
 
   function render(i) {
@@ -73,7 +81,7 @@
       if (g.items.length) h += tickBox(d.id + ":grocery", "grocery", BAG + "Groceries" + (g.title ? '<span class="tb-sub">' + g.title + "</span>" : ""), g.items,
         g.type === "main" ? "Big shop done. Next week\u2019s sorted!" : "Shopping sorted. Nice one!"); }
     if (d.nightBefore && d.nightBefore.length) h += tickBox("nb:" + W.range + d.id, "nightb", MOON + "Tonight, for tomorrow\u2019s cook", d.nightBefore, "Ready for tomorrow\u2019s cook. Nice!");
-    var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b, null, d.id + "-b") + meal("Lunch", d.l, null, d.id + "-l") + meal("Dinner", d.d, d.dAlt, d.id + "-d") +
+    var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b, null, d.id + "-b") + meal("Lunch", d.l, null, d.id + "-l") + meal("Dinner", d.d, d.dAlt, d.id + "-d", dinnerMode(d) === "merged") +
       '<div class="meal"><p class="slot">Snacks</p><p>' + W.snacks + "</p></div></section>";
     if (d.cook) {
       var done = cookComplete(d), open = !done || lsGet(ckey(d), "0") === "1";
@@ -114,6 +122,8 @@
     else h += '<div class="lanes">' + ["A", "B"].map(function (who) {
       return '<div class="lane"><h4>Person ' + who + "</h4><ol class=\"check cooklist\">" + p.cook.map(function (c, i) { return c.a === who ? step(c, i) : ""; }).join("") + "</ol></div>"; }).join("") + "</div>";
     h += '<h3 class="step-h">5. Pack</h3>' + list(p.pack, true, k + "pack");
+    if (dinnerMode(d) === "after") { var dm = M[d.d];
+      h += '<div class="after-cook"><p class="pause">Good place to stop; come back at dinner.</p><a class="still" href="#meal-dinner" data-todinner>Still to do at dinner: <b>' + dm.name + "</b> \u00b7 ~" + dm.cookMins + " min</a></div>"; }
     h += "</div>";
     h += '<div role="tabpanel" id="panel-rec" aria-labelledby="tab-rec"' + (tab === "rec" ? "" : " hidden") + ">" + recipeCards(d) + "</div>";
     return h + "</section>";
@@ -196,6 +206,11 @@
     var r = e.target.closest("[data-ref]"); if (r) { e.preventDefault(); var det = $(r.dataset.ref); if (det) { det.open = true; det.scrollIntoView({ block: "start" }); det.querySelector("summary").focus(); } }
   });
 
+  function scrollToEl(id) { var el = $(id); if (!el) return; el.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest("[data-tocook],[data-todinner]"); if (a) { e.preventDefault(); scrollToEl(a.hasAttribute("data-todinner") ? "meal-dinner" : "cook-sec"); return; }
+    var w = e.target.closest("[data-tocook-day]"); if (w) { e.preventDefault(); e.stopPropagation(); location.hash = "#today/" + w.dataset.tocookDay; setTimeout(function () { scrollToEl("cook-sec"); }, 60); }
+  }, true);
   /* ---- Timers (persist in localStorage; several can run at once) ---- */
   function timers() { try { return JSON.parse(lsGet("timers", "{}")); } catch (e) { return {}; } }
   function saveTimers(t) { lsSet("timers", JSON.stringify(t)); }
@@ -251,7 +266,7 @@
     var id = d[s[0]], m = id && M[id];
     var name = m ? m.name : "Nothing planned";
     var meta = o.out ? '<span class="out-pill">Out</span>' + (o.note ? '<span class="out-why">' + esc(o.note) + "</span>" : "") :
-      mark(m) + (isPestle(id) ? '<span class="tag p">Pestle</span>' : "");
+      (s[0] === "d" && dinnerMode(d) === "merged" ? '<span class="mk merged">Made during the cook</span>' : mark(m)) + (isPestle(id) ? '<span class="tag p">Pestle</span>' : "");
     return '<span class="cx-t"><span class="wt-slot">' + s[1] + "</span>" + name + "</span>" + (meta ? '<span class="cx-m">' + meta + "</span>" : "");
   }
   function noteUI() {
@@ -288,7 +303,7 @@
         var id = d[s[0]], ok = d.id + "-" + s[0], o = st[ok] || {}, m = id && M[id];
         var refs = m ? m.uses.map(function (u) { return '<a href="#recipes/c-' + u + '">' + short(u) + "</a> " + amt(u, m.qty && m.qty[u]); }) : [];
         if (m && m.items.length && id !== "birthday") refs.unshift('<a href="#recipes/m-' + id + '">How to assemble</a>');
-        var body = (m && m.effort ? '<p class="wt-eff">' + effort(m, s[1]) + "</p>" : "") +
+        var body = (m && m.effort ? '<p class="wt-eff">' + (s[0] === "d" && dinnerMode(d) === "merged" ? '<a href="#today/' + d.id + '" data-tocook-day="' + d.id + '">Made during ' + d.label + "\u2019s cook \u2192</a>" : effort(m, s[1])) + "</p>" : "") +
           (refs.length ? '<ul class="ov-refs">' + refs.map(function (r) { return "<li>" + r + "</li>"; }).join("") + "</ul>" : "") +
           '<div class="wt-plans"><label class="ov-out"><input type="checkbox" data-out="' + ok + '"' + (o.out ? " checked" : "") + "> Eating out / other plans</label>" +
           '<label class="ov-note"><span class="sr">Note for ' + title + " " + s[1] + '</span><input type="text" data-note="' + ok + '" value="' + esc(o.note) + '" placeholder="Where or why? (optional)" maxlength="60"></label></div>';

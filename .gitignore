@@ -1,0 +1,4 @@
+qa/
+qa*/
+*.png.tmp
+__pycache__/

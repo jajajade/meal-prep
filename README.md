@@ -63,6 +63,14 @@ Ticks, the 1/2-cook choice and timers persist in localStorage.
 - All collapsibles use one pattern (`cx` in app.js): same chevron and animation, with state remembered in localStorage.
 - `build.py` now only copies the newest week page to `index.html` with root paths; History renders from `weeks.js` in app.js.
 
+## Dinner on cook days
+When a day has `cook.plan` and its dinner meal has `effort: "cook"`:
+- **Weeknights (Mon–Fri): dinner is folded into the cook.** Write dinner's steps into `cook.plan.cook` as part of one timeline (e.g. pasta water on ~10 min before the ragu finishes, finish the sauce, plate, then pack). `cook.time` / `plan.time` is the full hands-on total *including* dinner. The dinner tile on Today and Week drops its "Cook · N min" chip, shows "Made during tonight's cook" and links to the cook section; its own steps are replaced by that pointer.
+- **Weekends (Sat/Sun): dinner stays separate** with its own chip and method. The cook section ends with a pause line ("Good place to stop; come back at dinner") and a "Still to do at dinner: <meal> · ~N min" link to the dinner card.
+- Override the weekday rule per day with `cook.dinnerInCook: true` (fold in) or `false` (keep separate).
+- The date strip and calendar show only COOK on cook days, whatever the dinner is.
+- Dinner steps don't get a separate per-person split; they sit in the timeline like any other step.
+
 ## Meal effort (fresh cook vs assemble)
 Each meal in `meals` can carry `effort: "cook" | "assemble"` and `cookMins: <number>`.
 - `cook`: needs a pan/oven step on the night beyond reheating (e.g. pan-fried lamb chops, cooking pasta/noodles, fried rice, eggs). Shown as an accent pill with a pan icon, "Cook tonight · 12 min" (dinner) or "Cook fresh · 10 min" (breakfast/lunch), on Today and Week; days whose dinner is a fresh cook get a small accent dot in the day strip and an underline in the calendar.

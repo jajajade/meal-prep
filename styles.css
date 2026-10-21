@@ -752,3 +752,14 @@ h2.grp{font-family:var(--display)!important;font-weight:400!important;font-size:
 }
 @media (min-width:1024px){.top #cal-btn{grid-column:2;justify-self:end}}
 @media (min-width:1280px){:root{--sn:240px}.sn-brand img{width:30px;height:30px}.sn-wm .wm-big{font-size:1.18rem;white-space:nowrap}.sn-wm .wm-small{font-size:.62rem}}
+/* Dinner folded into a weeknight cook / weekend "still to do" callout */
+.eff.merged,.mk.merged{display:inline-flex;align-items:center;gap:5px;font:700 .78rem var(--text);color:#a8341f;text-decoration:none;text-transform:none;letter-spacing:.01em;box-shadow:inset 0 0 0 1px #e9c3ba;padding:2px 9px 2px 7px;border-radius:999px;background:none}
+a.eff.merged:hover{background:var(--acc-bg)}
+.merged-note{margin:8px 0 0;font-size:.95rem;color:var(--mute)}
+.merged-note a{color:var(--ink);font-weight:700}
+.after-cook{margin:22px 0 4px;padding:16px 0 0;border-top:1px solid var(--line)}
+.after-cook .pause{margin:0 0 10px;color:var(--mute);font-size:.95rem}
+.after-cook .still{display:flex;align-items:center;min-height:52px;padding:10px 16px;border-radius:12px;background:var(--acc-bg);color:#8f2c1a;text-decoration:none;font-weight:700}
+.after-cook .still b{margin:0 4px;font-family:var(--display);font-weight:400;font-size:1.1rem;color:var(--ink)}
+.after-cook .still::after{content:"\2193";margin-left:auto;padding-left:12px}
+#cook-sec,#meal-dinner,.after-cook{scroll-margin-top:calc(var(--top-h,140px) + 12px)}
