@@ -229,7 +229,8 @@
     if (pill) { pill.hidden = !running; pill.textContent = running + (running === 1 ? " timer running" : " timers running"); }
   }
   setInterval(tickTimers, 1000);
-  function toast(msg) { var el = $("toast"); if (!el) return; el.textContent = msg; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { el.hidden = true; }, 3000); }
+  function toast(msg) { var el = $("toast"); if (!el) return; el.textContent = msg; el.hidden = false; void el.offsetWidth; el.classList.add("show"); clearTimeout(toast.t); clearTimeout(toast.h);
+    toast.t = setTimeout(function () { el.classList.remove("show"); toast.h = setTimeout(function () { el.hidden = true; }, 300); }, 2500); }
 
   /* ---- Week overview ---- */
   var SLOTS = [["b", "Breakfast"], ["l", "Lunch"], ["d", "Dinner"]];
@@ -339,8 +340,9 @@
     lsSet(tbk(id, cb.dataset.tbk), cb.checked ? "1" : "0");
     var li = cb.closest("li");
     [].forEach.call(document.querySelectorAll('[data-tb="' + id + '"] [data-tbk="' + cb.dataset.tbk + '"]'), function (x) { x.checked = cb.checked; });
-    if (cb.checked) { li.classList.remove("pop"); void li.offsetWidth; li.classList.add("pop"); }
+    if (cb.checked) { li.classList.remove("tb-pop"); void li.offsetWidth; li.classList.add("tb-pop"); setTimeout(function () { li.classList.remove("tb-pop"); }, 500); }
     var all = tbAll(id, n);
+    if (cb.checked && !all) toast("Ticked off");
     [].forEach.call(document.querySelectorAll('[data-tb="' + id + '"]'), function (bx) {
       var bar = bx.querySelector(".tb-bar");
       if (all && !bx.classList.contains("is-done")) {

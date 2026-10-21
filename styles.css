@@ -144,7 +144,9 @@ ol.cooklist li label{flex:1 1 220px}
 .tag{display:inline-block;font:700 .78rem "Atkinson Hyperlegible",system-ui,sans-serif;color:var(--herb);background:var(--herb-bg);padding:2px 8px;border-radius:99px;vertical-align:middle}
 .tag.p{color:var(--acc);background:var(--acc-bg)}
 /* toast + timer pill */
-.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;z-index:20;box-shadow:0 8px 24px rgba(31,42,34,.25)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,8px);opacity:0;pointer-events:none;max-width:calc(100vw - 32px);background:var(--ink);color:#fff;font:700 .95rem "Atkinson Hyperlegible",system-ui,sans-serif;padding:12px 18px;border-radius:12px;z-index:20;box-shadow:0 8px 24px rgba(31,42,34,.25);transition:opacity .25s ease,transform .25s cubic-bezier(.16,1,.3,1)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
 .timer-pill{position:fixed;right:16px;bottom:20px;z-index:15;background:var(--acc);color:#fff;font-weight:700;padding:12px 16px;border-radius:99px;text-decoration:none;box-shadow:0 4px 14px rgba(31,42,34,.25)}
 /* collapsible recipe cards */
 .rbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 6px}
@@ -201,7 +203,7 @@ ul.uses li{margin:2px 0}
 .tb-list{margin:4px 0 0}
 .tb-list label{min-height:48px;align-items:center}
 .tb-list input{width:24px;height:24px;margin:0}
-.tb-list li.pop span{animation:tbpop .45s cubic-bezier(.16,1,.3,1)}
+.tb-list li.tb-pop span{animation:tbpop .45s cubic-bezier(.16,1,.3,1)}
 @keyframes tbpop{0%{transform:scale(1)}40%{transform:scale(1.05)}100%{transform:scale(1)}}
 .tb-bar{width:100%;display:flex;align-items:center;gap:10px;min-height:52px;padding:10px 16px;border:0;font:700 1rem "Atkinson Hyperlegible",system-ui,sans-serif;text-align:left;cursor:pointer;color:var(--herb);
   background:var(--herb-bg) radial-gradient(circle at 1px 1px,rgba(62,97,64,.12) 1px,transparent 1.5px) 0 0/12px 12px}
@@ -212,7 +214,7 @@ ul.uses li{margin:2px 0}
 .remind.tb .tb-bar{color:var(--acc)}
 .tb.is-done{background:var(--herb-bg)}
 .plainbox{margin:0}
-@media (prefers-reduced-motion:reduce){.tb-body{transition:none}.tb-list li.pop span{animation:none}}
+@media (prefers-reduced-motion:reduce){.tb-body{transition:none}.tb-list li.tb-pop span{animation:none}}
 .tb-body>.rin,.cookbody>.rin,.rbody>.rin{min-height:0}
 /* ---- Tabs layout ---- */
 body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
