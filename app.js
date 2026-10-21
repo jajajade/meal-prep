@@ -572,7 +572,7 @@
   document.addEventListener("keydown", function (e) {
     if (document.body.getAttribute("data-view") !== "today" || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
     var t = e.target; if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-    if (!$("cal-pop").hidden || ($("drawer") && !$("drawer").hidden)) return;
+    if (!$("cal-pop").hidden) return;
     if (e.key === "ArrowLeft") { e.preventDefault(); goDay(-1); } else if (e.key === "ArrowRight") { e.preventDefault(); goDay(1); }
   });
   var sx = null, sy = 0;
@@ -581,23 +581,6 @@
     if (sx === null) return; var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
     if (Math.abs(dx) > 70 && Math.abs(dy) < 40 && !e.target.closest(".scroll, input, textarea")) goDay(dx < 0 ? 1 : -1);
   }, { passive: true });
-
-  /* ---- Desktop menu drawer ---- */
-  var dr = $("drawer"), mb = $("menu-btn");
-  function drawerOpen(open) {
-    dr.hidden = !open; mb.setAttribute("aria-expanded", open); document.body.classList.toggle("drawer-open", open);
-    if (open) { var f = dr.querySelector('[aria-current="page"]') || dr.querySelector("a,button"); f.focus(); } else mb.focus();
-  }
-  if (dr && mb) {
-    mb.onclick = function () { drawerOpen(dr.hidden); };
-    dr.addEventListener("click", function (e) { if (e.target === dr || e.target.closest("#drawer-close")) drawerOpen(false); else if (e.target.closest("a")) { dr.hidden = true; mb.setAttribute("aria-expanded", "false"); document.body.classList.remove("drawer-open"); } });
-    document.addEventListener("keydown", function (e) {
-      if (dr.hidden) return;
-      if (e.key === "Escape") { e.preventDefault(); drawerOpen(false); return; }
-      if (e.key === "Tab") { var f = dr.querySelectorAll("a,button"), a = f[0], z = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); } }
-    });
-  }
 
   /* ---- Calendar popover ---- */
   var opener = null;
