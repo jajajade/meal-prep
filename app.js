@@ -82,7 +82,7 @@
         '<div class="cookbody" id="cookbody"' + (open ? "" : " inert") + '><div class="rin">' + cookSection(d) + "</div></div></div>";
       h += wrap + meals;
     } else h += meals;
-    $("today").innerHTML = h;
+    $("today-body").innerHTML = h;
     $("today-title").textContent = (d.cook ? "Cook day · " : "") + dayName[d.id];
     $("cal-btn").setAttribute("aria-label", "Open calendar, " + dayName[d.id] + " selected");
     restore(); tickTimers();
@@ -495,8 +495,15 @@
       var el = $("cx-" + sub);
       if (el) { if (!el.classList.contains("open")) cxOpen(el, true); setTimeout(function () { el.scrollIntoView({ block: "start" }); el.querySelector(".cx-h").focus({ preventScroll: true }); }, 0); return; }
     }
-    window.scrollTo(0, 0);
+    toTop();
   }
+  /* Always land at the top of a view: no native fragment jump, no smooth scroll, header height kept in sync for scroll-padding. */
+  function toTop() { try { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); } catch (e) { window.scrollTo(0, 0); } }
+  function syncTopH() { var t = document.querySelector(".top"); if (t) document.documentElement.style.setProperty("--top-h", t.offsetHeight + "px"); }
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  window.addEventListener("resize", syncTopH);
+  window.addEventListener("load", function () { syncTopH(); if (!/^#recipes\/./.test(location.hash)) toTop(); });
+  window.addEventListener("hashchange", function () { setTimeout(syncTopH, 0); });
   window.addEventListener("hashchange", route);
   render = (function (r) { return function (i) { r(i); if (typeof dayNav === "function" && typeof IDS !== "undefined") dayNav(); [].forEach.call(document.querySelectorAll("#days a"), function (a, j) { a.setAttribute("aria-current", j === i ? "true" : "false"); }); }; })(render);
 
@@ -531,8 +538,8 @@
     if (e.key === "ArrowLeft") { e.preventDefault(); goDay(-1); } else if (e.key === "ArrowRight") { e.preventDefault(); goDay(1); }
   });
   var sx = null, sy = 0;
-  $("today").addEventListener("touchstart", function (e) { if (e.touches.length !== 1) { sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-  $("today").addEventListener("touchend", function (e) {
+  $("today-body").addEventListener("touchstart", function (e) { if (e.touches.length !== 1) { sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  $("today-body").addEventListener("touchend", function (e) {
     if (sx === null) return; var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
     if (Math.abs(dx) > 70 && Math.abs(dy) < 40 && !e.target.closest(".scroll, input, textarea")) goDay(dx < 0 ? 1 : -1);
   }, { passive: true });

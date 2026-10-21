@@ -374,7 +374,7 @@ main{max-width:760px}
 .tb-a,.cb-a,.tb-bar .chev,.cookbar .chev{color:var(--mute)}
 .tb-msg,.cb-t{font-weight:700}
 .tb.is-done:not(.collapsed) .tb-bar{border-radius:0}
-#today > :last-child{margin-bottom:0}
+#today-body > :last-child{margin-bottom:0}
 /* cook section: no outer card, ruled */
 .cookwrap{border-top:1px solid var(--line);margin:0 0 8px}
 .cookwrap .cookbar{margin:0}
@@ -614,3 +614,23 @@ ul.uses li::before,.meal ul.plain li::before,.recipe ul.plain li::before,.cx ul.
 .cal-grid .fresh::after{content:"";position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:var(--acc);opacity:.45}
 .cal-grid .today.fresh::after{background:#f6b3a6;opacity:.9}
 .cal-key .k.fresh{flex:none;width:4px!important;height:4px!important;border-radius:50%;background:var(--acc);opacity:.45}
+
+/* ===== Polish pass (Oct 2026) ===== */
+/* 1. Nothing hides under the sticky header */
+html{scroll-padding-top:calc(var(--top-h,140px) + 12px);scroll-behavior:auto}
+.view h1,.view h2,.cx,.tb,.meal,section{scroll-margin-top:calc(var(--top-h,140px) + 12px)}
+/* 8. One container: header, strip and content share edges */
+.top .bar,.days,main{max-width:760px;margin-left:auto;margin-right:auto}
+@media (min-width:1024px){
+  .top .bar{padding-left:28px;padding-right:28px}
+  main{padding-left:28px;padding-right:28px}
+  .days{padding-left:20px;padding-right:20px}
+  body[data-view="week"] .top .bar{max-width:1240px}
+}
+/* 6. Touch targets: whole row is the hit area, bigger boxes, 44px toggles */
+.check label,.tb-list label{min-height:48px;padding:8px 0;width:100%}
+.check input,.tb-list input{width:26px!important;height:26px!important;margin:0!important;align-self:flex-start;margin-top:1px!important}
+.tb-list label{align-items:flex-start}
+.seg button,.seg.lmode button{min-height:44px!important}
+.wordmark{min-height:44px;justify-content:center}
+.wt-plans .ov-out input{width:22px!important;height:22px!important}
