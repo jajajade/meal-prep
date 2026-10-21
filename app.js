@@ -54,7 +54,10 @@
     var uses = m.uses.length ? '<p class="uses-h">From the fridge (per person):</p><ul class="uses">' + usesList(m).map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
     return '<div class="meal">' + "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + '<p class="slot">' + slot + " " + (m.effort ? effort(m, slot) : (m.time ? '<span class="muted">· ' + m.time + "</span>" : "")) + "</p>" + uses +
       (function () { var extra = m.uses.length ? m.items.filter(function (t) { return !/^(1|1½) portions? |^1 jammy egg$/.test(t); }) : m.items;
-        return extra.length ? (m.uses.length ? '<p class="uses-h">Plus:</p>' : "") + list(extra.map(function (t) { return t.replace(/^1 jammy egg AND /, ""); }), false) : ""; })() + (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "") + nut(m.nut) + "</div>";
+        return extra.length ? (m.uses.length ? '<p class="uses-h">Plus:</p>' : "") + list(extra.map(function (t) { return t.replace(/^1 jammy egg AND /, ""); }), false) : ""; })() + (m.atWork && /lunch/i.test(slot) ? (function () { var w = lsGet("lunchmode", "work") === "work";
+          return '<div class="seg lmode" role="group" aria-label="Where are you eating?"><button type="button" data-lmode="work" aria-pressed="' + w + '">At work</button><button type="button" data-lmode="home" aria-pressed="' + !w + '">At home</button></div>' +
+            '<ol class="quick">' + (w ? m.atWork : m.steps).map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>"; })() :
+        (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "")) + nut(m.nut) + "</div>";
   }
 
   function render(i) {
@@ -307,6 +310,10 @@
     if (navigator.clipboard && window.isSecureContext !== false) navigator.clipboard.writeText(text).then(function () { toast("Copied, paste this to Chef"); }, fb); else fb();
   });
 
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-lmode]"); if (!b) return;
+    lsSet("lunchmode", b.dataset.lmode); render(cur);
+  });
   /* ---- Tickable reminder boxes ---- */
   function tbk(id, i) { return id.indexOf("nb:") === 0 ? id + "-" + i : "tb:" + W.range + ":" + id + ":" + i; }
   function tbAll(id, n) { for (var i = 0; i < n; i++) if (lsGet(tbk(id, i), "0") !== "1") return false; return true; }

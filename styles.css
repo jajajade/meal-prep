@@ -569,3 +569,5 @@ h2,.sec-h{font-size:clamp(1.35rem,1.05rem + 1.4vw,1.75rem)}
 @media (min-width:1024px){.ov{align-items:start}.ov-h{min-height:3.1rem}}
 .wt.out .cx-h{opacity:1}
 body[data-view="week"] main{padding-bottom:72px}
+.seg.lmode{display:inline-flex;margin:4px 0 2px}
+.seg.lmode button{min-height:40px;padding:0 14px;font:700 .85rem var(--text);border:0;color:var(--ink);cursor:pointer}

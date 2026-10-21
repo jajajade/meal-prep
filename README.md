@@ -77,3 +77,6 @@ Optional fields on `window.WEEK`:
 - `weekNote`: the note you sent for this week (shown under "Your note").
 - `weekNoteApplied`: Chef's one-liner on how it shaped the plan (shown under "Chef").
 The Week tab also has a "Notes for this week" textarea that autosaves to localStorage (`weeknote:<range>`). It's included in the "Send changes to Chef" copy text. That button only appears when eating-out ticks, slot notes or the week note differ from what was last sent (`sent:<range>`). Eating-out data keeps its old key (`out:<range>`).
+
+## Lunch at work vs at home
+A meal can have `atWork: [...]` steps (packing notes + microwave reheat, cold parts in a separate pot). When it's served as a lunch, Today shows an "At work | At home" switch (remembered in localStorage `lunchmode`, default work); "At home" shows the normal `steps`.
