@@ -587,7 +587,7 @@
       else if (k in other) h += '<a class="' + cls + ' past" href="' + other[k] + '" aria-label="' + label + ', past week">' + dd + "</a>";
       else h += '<button type="button" class="' + cls + '" disabled aria-label="' + label + ', no plan"' + (k === todayIso ? ' aria-current="date"' : "") + ">" + dd + "</button>";
     }
-    h += '</div><p class="cal-key"><span class="k plan"></span>Planned <span class="k cook"></span>Cook day <span class="k today"></span>Today <span class="k fresh"></span>Cooking tonight</p>';
+    h += '</div><p class="cal-key"><span class="ki"><span class="k plan">12</span>Planned</span><span class="ki"><span class="k today">12</span>Today</span><span class="ki"><span class="k cook"></span>Cook day</span></p>';
     $("cal").innerHTML = h;
   }
   $("cal").addEventListener("click", function (e) {
