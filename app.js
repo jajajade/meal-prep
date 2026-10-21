@@ -3,6 +3,7 @@
   var cur = 0;
   var W = window.WEEK, C = W.components, M = W.meals, D = W.days;
   var $ = function (id) { return document.getElementById(id); };
+  var todayIso = (function () { var n = new Date(), f = function (x) { return ("0" + x).slice(-2); }; try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(n); } catch (e) { return n.getFullYear() + "-" + f(n.getMonth() + 1) + "-" + f(n.getDate()); } })();
   var dayName = {}; D.forEach(function (d) { dayName[d.id] = d.label + " " + d.num; });
 
   function list(items, check, key) {
@@ -243,26 +244,46 @@
   }
   function syncSend() { var b = $("ov-send"); if (b) b.hidden = weekState() === baseline(); }
   function mark(m) {
-    if (!m || !m.effort) return "";
-    return m.effort === "cook" ? '<span class="mk cook" title="Cook fresh on the night">' + PAN + (m.cookMins ? m.cookMins + " min" : "Cook") + "</span>" : '<span class="mk" title="Reheat and plate">Assemble</span>';
+    if (!m || m.effort !== "cook") return "";
+    return '<span class="mk cook" title="Pan or oven on the night">' + PAN + "Cook" + (m.cookMins ? " · " + m.cookMins + " min" : "") + "</span>";
   }
   function tileHead(d, s, o) {
     var id = d[s[0]], m = id && M[id];
     var name = m ? m.name : "Nothing planned";
-    return '<span class="cx-t"><span class="wt-slot">' + s[1] + "</span>" + (o.out ? "<s>" + name + "</s>" : name) + "</span>" +
-      '<span class="cx-m">' + (o.out ? '<span class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</span>" : mark(m) + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "")) + "</span>";
+    var meta = o.out ? '<span class="out-pill">Out</span>' + (o.note ? '<span class="out-why">' + esc(o.note) + "</span>" : "") :
+      mark(m) + (isPestle(id) ? '<span class="tag p">Pestle</span>' : "");
+    return '<span class="cx-t"><span class="wt-slot">' + s[1] + "</span>" + name + "</span>" + (meta ? '<span class="cx-m">' + meta + "</span>" : "");
   }
+  function noteUI() {
+    var v = lsGet(NOTEKEY, "").trim(), saved = $("wk-saved"), add = $("wk-add"), field = $("wk-field");
+    if (!saved) return;
+    var editing = !field.hidden;
+    saved.hidden = editing || !v; add.hidden = editing || !!v;
+    $("wk-text").textContent = v;
+  }
+  function noteEdit(on) {
+    $("wk-field").hidden = !on; noteUI();
+    if (on) { var t = $("week-note"); t.focus(); t.setSelectionRange(t.value.length, t.value.length); } else { var f = lsGet(NOTEKEY, "").trim() ? $("wk-edit") : $("wk-add"); if (f) f.focus(); }
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("#wk-add, #wk-edit")) noteEdit(true);
+    else if (e.target.closest("#wk-done")) noteEdit(false);
+    else if (e.target.closest("#ov-past")) { var ov = document.querySelector(".ov"), on = !ov.classList.contains("show-past"); ov.classList.toggle("show-past", on); e.target.closest("#ov-past").setAttribute("aria-expanded", on); e.target.closest("#ov-past").querySelector(".pl").textContent = on ? "Hide earlier days" : e.target.closest("#ov-past").dataset.label; }
+  });
   function overview() {
     var st = outState(), note = lsGet(NOTEKEY, "");
+    var past = D.filter(function (d) { return d.date < todayIso; });
     var h = '<div class="wk-note">' +
       (W.weekNote ? '<p class="wk-their"><span class="grp">Your note</span>' + esc(W.weekNote) + "</p>" : "") +
       (W.weekNoteApplied ? '<p class="wk-chef"><span class="grp">Chef</span>' + esc(W.weekNoteApplied) + "</p>" : "") +
-      '<label class="wk-label" for="week-note">Notes for this week</label><textarea id="week-note" rows="2" maxlength="400" placeholder="Craving Mexican? Big week at work? Note it here.">' + esc(note) + "</textarea></div>" +
-      '<p class="small muted ov-key">Tap a meal for portions, recipes and plans. ' + mark({ effort: "cook", cookMins: 0 }).replace(">Cook<", ">Cook<") + " = pan or oven on the night.</p>" +
-      '<div class="ov">';
+      '<div class="wk-saved" id="wk-saved" hidden><p class="wk-text" id="wk-text"></p><button type="button" class="linkbtn" id="wk-edit" aria-label="Edit note for this week">Edit</button></div>' +
+      '<button type="button" class="wk-add" id="wk-add" aria-controls="wk-field"><span aria-hidden="true">+</span> Add a note for the week</button>' +
+      '<div class="wk-field" id="wk-field" hidden><label class="sr" for="week-note">Note for this week</label><textarea id="week-note" rows="2" maxlength="400" placeholder="Anything on the cards this week? Cravings, late nights, plans\u2026">' + esc(note) + '</textarea><button type="button" class="btn sm" id="wk-done">Done</button></div></div>' +
+      (past.length ? '<button type="button" class="ov-past" id="ov-past" aria-expanded="false" data-label="Show earlier days (' + past.map(function (d) { return d.label + " " + d.num; }).join(", ") + ')">' + CHEV + '<span class="pl">Show earlier days (' + past.map(function (d) { return d.label + " " + d.num; }).join(", ") + ")</span></button>" : "") +
+      '<div class="ov"><div class="ov-labels" aria-hidden="true"><span></span>' + SLOTS.map(function (s) { return "<span>" + s[1] + "</span>"; }).join("") + "</div>";
     D.forEach(function (d) {
       var title = parse(d.date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
-      h += '<section class="ov-day" aria-label="' + title + '"><h2 class="ov-h"><a href="#today/' + d.id + '" class="ov-daylink">' + title + "</a>" + (d.cook ? ' <span class="tag">Cook day</span>' : "") + "</h2>";
+      h += '<section class="ov-day' + (d.date < todayIso ? " past" : "") + (d.date === todayIso ? " now" : "") + '" aria-label="' + title + '"><h2 class="ov-h"><a href="#today/' + d.id + '" class="ov-daylink">' + title + "</a>" + (d.cook ? ' <span class="day-tag">Cook day</span>' : "") + (d.date === todayIso ? ' <span class="day-tag now">Today</span>' : "") + "</h2>";
       SLOTS.forEach(function (s) {
         var id = d[s[0]], ok = d.id + "-" + s[0], o = st[ok] || {}, m = id && M[id];
         var refs = m ? m.uses.map(function (u) { return '<a href="#recipes/c-' + u + '">' + short(u) + "</a> " + amt(u, m.qty && m.qty[u]); }) : [];
@@ -277,7 +298,7 @@
     });
     h += '</div><div id="ov-fallback" hidden><p class="small">Couldn\u2019t copy automatically. Select and copy this:</p><textarea id="ov-text" rows="3" readonly></textarea></div>' +
       '<button type="button" class="ov-send" id="ov-send" hidden>Send changes to Chef</button>';
-    $("overview-body").innerHTML = h; syncSend();
+    $("overview-body").innerHTML = h; syncSend(); noteUI();
   }
   document.addEventListener("input", function (e) { if (e.target.id === "week-note") { lsSet(NOTEKEY, e.target.value); syncSend(); } });
   function collectOut() {
@@ -401,7 +422,7 @@
   function staticParts() {
     var nw = new Date(), td = nw.getFullYear() + "-" + ("0" + (nw.getMonth() + 1)).slice(-2) + "-" + ("0" + nw.getDate()).slice(-2);
     $("days").innerHTML = D.map(function (d, i) {
-      return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"' + (d.date < td ? ' class="past"' : "") + '><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.cook ? '<i class="mk">cook</i>' : freshDay(d) ? '<i class="mk"><em class="fdot" title="Cooking fresh tonight"></em></i>' : '<i class="mk" aria-hidden="true"></i>') + "</a>";
+      return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"' + (d.date < todayIso ? ' class="past"' : "") + '><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.date < todayIso ? '<i class="mk" aria-hidden="true"></i>' : d.cook ? '<i class="mk">cook</i>' : freshDay(d) ? '<i class="mk"><em class="fdot" title="Cooking fresh tonight"></em></i>' : '<i class="mk" aria-hidden="true"></i>') + "</a>";
     }).join("");
   }
 
@@ -572,7 +593,6 @@
   document.addEventListener("click", function (e) { if (!e.target.closest(".pop") && !e.target.closest("#cal-btn")) closeCal(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeCal(true); });
 
-  var todayIso = (function () { try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); } catch (e) { return iso(new Date()); } })();
   var here = {}; D.forEach(function (d, i) { here[d.date] = i; });
   var other = {}; (window.WEEKS || []).forEach(function (w) {
     if (!w.start || !w.end) return; var a = parse(w.start), z = parse(w.end);

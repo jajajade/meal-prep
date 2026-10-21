@@ -634,3 +634,52 @@ html{scroll-padding-top:calc(var(--top-h,140px) + 12px);scroll-behavior:auto}
 .seg button,.seg.lmode button{min-height:44px!important}
 .wordmark{min-height:44px;justify-content:center}
 .wt-plans .ov-out input{width:22px!important;height:22px!important}
+/* 2. Week: note is one quiet row until needed */
+.wk-note{margin:2px 0 14px}
+.wk-add{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px 0 12px;border:1px dashed var(--line);border-radius:999px;background:none;color:var(--mute);font:700 .92rem var(--text);cursor:pointer}
+.wk-add span{font-size:1.15rem;line-height:1;color:var(--ink)}
+.wk-add:hover{border-color:var(--mute);color:var(--ink)}
+.wk-add[hidden],.wk-saved[hidden],.wk-field[hidden]{display:none}
+.wk-saved{display:flex;align-items:baseline;gap:12px;padding:10px 0 10px 14px;box-shadow:inset 2px 0 0 var(--ink)}
+.wk-text{margin:0;flex:1;font-size:.98rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.wk-saved .linkbtn{min-height:32px;font-size:.88rem;flex:none}
+.wk-field{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.btn.sm{min-height:44px;padding:0 18px;font-size:.9rem}
+.ov-past{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:0 0 4px;padding:0;border:0;border-top:1px solid var(--line);background:none;color:var(--mute);font:700 .88rem var(--text);cursor:pointer;text-align:left}
+.ov-past .chev{width:18px;height:18px}
+.ov-past[aria-expanded=true] .chev{transform:rotate(180deg)}
+.ov-labels{display:none}
+@media (max-width:1023px){.ov:not(.show-past) .ov-day.past{display:none}.ov-day.past{opacity:.6}}
+@media (min-width:1024px){.ov-past{display:none}}
+/* 3. Calmer tiles: cook chip is the only signal; Pestle is a quiet tag */
+.wt .cx-m{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:5px}
+.wt .cx-m:empty{display:none}
+.mk.cook{color:#a8341f;background:var(--acc-bg);padding:2px 8px 2px 6px;border-radius:999px;font-size:.74rem}
+.tag,.tag.p{color:var(--mute)!important;background:none!important;font-size:.66rem!important;letter-spacing:.1em;padding:0!important;font-weight:700}
+.day-tag{font:700 .78rem var(--text);letter-spacing:0;text-transform:none;color:#a8341f}
+.day-tag.now{color:var(--ink);background:var(--chip);padding:1px 8px;border-radius:999px}
+/* 5. "Out" reads as plans, not errors */
+.out-pill{display:inline-block;font:700 .72rem var(--text);letter-spacing:.04em;color:var(--ink);background:var(--chip);padding:2px 8px;border-radius:999px}
+.out-why{font:400 .85rem var(--text);color:var(--mute)}
+.wt.out .cx-t{color:var(--mute)}
+.out-note{color:var(--mute)!important;font-weight:700}
+.meal.out h3 s{text-decoration:none}
+.tb-title .ic,.tb-title svg{color:var(--ink)!important}
+.ov-day{background:linear-gradient(var(--line),var(--line)) top/100% 1px no-repeat!important}
+.ov-h{font-size:clamp(1.3rem,1.05rem + 1.1vw,1.5rem)}
+/* 4. Desktop week: one grid, every slot row shares a height */
+@media (min-width:1024px){
+  .ov{grid-template-columns:76px repeat(6,minmax(0,1fr))!important;grid-template-rows:auto auto auto auto;column-gap:18px!important;align-items:stretch!important}
+  .ov-labels,.ov-day{grid-row:1 / span 4;display:grid;grid-template-rows:subgrid;margin:0!important}
+  .ov-day{padding-top:0!important;background:none!important}
+  .ov-labels span{font:700 .7rem var(--text);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);padding-top:14px;border-top:1px solid var(--line)}
+  .ov-labels span:first-child{border:0}
+  .ov-h{min-height:0!important;padding:0 0 10px;margin:0!important;border-bottom:2px solid transparent;flex-direction:column;align-items:flex-start}
+  .ov-day.now .ov-h{border-bottom-color:var(--ink)}
+  .ov-day.past{opacity:.5}
+  .ov-day.past:hover{opacity:1}
+  .wt{background:linear-gradient(var(--line),var(--line)) top/100% 1px no-repeat}
+  .wt .cx-h{min-height:0!important;padding:12px 0 14px;align-items:start}
+  .wt-slot{display:none!important}
+  .wt .cx-t{font-size:1.08rem;text-wrap:balance}
+}
