@@ -71,3 +71,9 @@ Derive it from the meal's `steps`: anything that fries, boils or bakes on the ni
 
 ## Cache-busting
 `python3 build.py` stamps every local asset URL (styles.css, app.js, weeks.js, data files, icons, manifest) with `?v=<content hash>` in all week pages and index.html, so phones never mix new HTML with a cached old app.js/styles.css. Always run it before committing.
+
+## Week note
+Optional fields on `window.WEEK`:
+- `weekNote`: the note you sent for this week (shown under "Your note").
+- `weekNoteApplied`: Chef's one-liner on how it shaped the plan (shown under "Chef").
+The Week tab also has a "Notes for this week" textarea that autosaves to localStorage (`weeknote:<range>`). It's included in the "Send changes to Chef" copy text. That button only appears when eating-out ticks, slot notes or the week note differ from what was last sent (`sent:<range>`). Eating-out data keeps its old key (`out:<range>`).

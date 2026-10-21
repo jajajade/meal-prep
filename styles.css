@@ -517,3 +517,55 @@ h2,.sec-h{font-size:clamp(1.35rem,1.05rem + 1.4vw,1.75rem)}
   .ov-out{min-height:44px}
 }
 @media (max-width:767px){.days a i{font-size:.7rem;letter-spacing:.04em}}
+
+/* ---- Week: note + compact tiles with progressive disclosure ---- */
+.wk-note{margin:4px 0 18px}
+.wk-their,.wk-chef{margin:0 0 10px;font-size:.95rem}
+.wk-their .grp,.wk-chef .grp{display:block;margin:0 0 2px}
+.wk-chef{padding-left:12px;box-shadow:inset 2px 0 0 var(--acc)}
+.wk-label{display:block;font:700 .8rem var(--text);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:0 0 6px}
+#week-note{width:100%;min-height:52px;font:inherit;font-size:1rem;line-height:1.45;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);resize:vertical}
+#week-note:focus{outline:2px solid var(--ink);outline-offset:1px}
+.ov-key{margin:0 0 14px}
+.ov{display:grid;gap:0}
+.ov-day{padding-top:12px!important;padding-bottom:4px!important;margin-bottom:14px!important}
+.ov-h{display:flex;align-items:baseline;gap:8px;margin:0 0 4px}
+.ov-daylink{color:var(--ink);text-decoration:none}
+.ov-daylink:hover{text-decoration:underline;text-underline-offset:3px}
+.wt .cx-h{min-height:56px;padding:8px 0}
+.wt .cx-t{display:block;font-size:clamp(1.08rem,.98rem + .4vw,1.2rem);line-height:1.2}
+.wt-slot{display:block;font:700 .72rem var(--text);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:3px}
+.wt .cx-m{margin-top:3px}
+.mk{display:inline-flex;align-items:center;gap:4px;font:700 .75rem var(--text);color:var(--mute)}
+.mk.cook{color:#a8341f}
+.mk .ic{width:13px;height:13px}
+.wt.out .cx-t s{color:var(--mute)}
+.wt.out .cx-h{opacity:.8}
+.wt .rin{padding:0 0 12px}
+.wt-eff{margin:0 0 6px}
+.wt .ov-refs{list-style:none;padding:0;margin:0 0 8px;font-size:.92rem}
+.wt .ov-refs li{padding:2px 0}
+.wt-plans{border-top:1px dashed var(--line);padding-top:4px}
+.wt-plans .ov-out{font-size:.88rem;color:var(--mute);min-height:44px}
+.wt-plans .ov-out input{width:18px;height:18px}
+.ov-slot,.wt-plans .ov-note{display:block}
+.wt-plans:has(.ov-out input:not(:checked)) .ov-note{display:none}
+.ov-note input{font-size:.95rem!important;padding:8px 10px!important}
+.ov-send{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom));z-index:30;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);font:700 .92rem var(--text);box-shadow:0 6px 20px rgba(29,36,31,.18);cursor:pointer}
+.ov-send[hidden]{display:none}
+@media (min-width:1024px){
+  .ov-send{bottom:24px}
+  body[data-view="week"] main{max-width:1240px}
+  body[data-view="week"] #v-week > h1,body[data-view="week"] .wk-note,body[data-view="week"] .ov-key{max-width:720px}
+  .ov{grid-template-columns:repeat(6,minmax(0,1fr));column-gap:20px!important}
+  .ov-day{margin-bottom:0!important}
+  .ov-h{flex-direction:column;gap:2px;font-size:1.25rem!important}
+  .wt .cx-h{min-height:72px}
+}
+@media (min-width:768px) and (max-width:1023px){.ov{grid-template-columns:1fr 1fr;column-gap:40px!important}}
+.wt .cx-b{overflow:hidden}
+.wt .cx-b>.rin{padding:0!important}
+.wt .wt-plans{margin-bottom:12px}
+@media (min-width:1024px){.ov{align-items:start}.ov-h{min-height:3.1rem}}
+.wt.out .cx-h{opacity:1}
+body[data-view="week"] main{padding-bottom:72px}

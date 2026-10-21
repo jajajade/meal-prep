@@ -230,27 +230,53 @@
 
   /* ---- Week overview ---- */
   var SLOTS = [["b", "Breakfast"], ["l", "Lunch"], ["d", "Dinner"]];
+  var NOTEKEY = "weeknote:" + W.range, SENTKEY = "sent:" + W.range;
+  function weekState() { return JSON.stringify({ out: collectOutFrom(outState()), note: lsGet(NOTEKEY, "") }); }
+  function collectOutFrom(st) { var r = {}; Object.keys(st).sort().forEach(function (k) { var o = st[k]; if (o && (o.out || o.note)) r[k] = { out: !!o.out, note: o.note || "" }; }); return r; }
+  function baseline() {
+    var b = lsGet(SENTKEY, null); if (b !== null) return b;
+    var st = {}; D.forEach(function (d) { if (d.out) Object.keys(d.out).forEach(function (k) { st[d.id + "-" + k] = { out: true, note: d.out[k] }; }); });
+    return JSON.stringify({ out: collectOutFrom(st), note: "" });
+  }
+  function syncSend() { var b = $("ov-send"); if (b) b.hidden = weekState() === baseline(); }
+  function mark(m) {
+    if (!m || !m.effort) return "";
+    return m.effort === "cook" ? '<span class="mk cook" title="Cook fresh on the night">' + PAN + (m.cookMins ? m.cookMins + " min" : "Cook") + "</span>" : '<span class="mk" title="Reheat and plate">Assemble</span>';
+  }
+  function tileHead(d, s, o) {
+    var id = d[s[0]], m = id && M[id];
+    var name = m ? m.name : "Nothing planned";
+    return '<span class="cx-t"><span class="wt-slot">' + s[1] + "</span>" + (o.out ? "<s>" + name + "</s>" : name) + "</span>" +
+      '<span class="cx-m">' + (o.out ? '<span class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</span>" : mark(m) + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "")) + "</span>";
+  }
   function overview() {
-    var st = outState();
-    var h = '<p class="small muted">Meals and portions for each day. Tick a meal if you\u2019re eating out or have other plans; it saves straight away. Submit copies a summary to send Chef.</p><p class="small muted ov-key">' + effort({ effort: "cook" }, "Dinner") + ' needs a pan or oven on the night. ' + effort({ effort: "assemble" }) + ' is reheat and plate.</p><div class="ov">';
+    var st = outState(), note = lsGet(NOTEKEY, "");
+    var h = '<div class="wk-note">' +
+      (W.weekNote ? '<p class="wk-their"><span class="grp">Your note</span>' + esc(W.weekNote) + "</p>" : "") +
+      (W.weekNoteApplied ? '<p class="wk-chef"><span class="grp">Chef</span>' + esc(W.weekNoteApplied) + "</p>" : "") +
+      '<label class="wk-label" for="week-note">Notes for this week</label><textarea id="week-note" rows="2" maxlength="400" placeholder="Craving Mexican? Big week at work? Note it here.">' + esc(note) + "</textarea></div>" +
+      '<p class="small muted ov-key">Tap a meal for portions, recipes and plans. ' + mark({ effort: "cook", cookMins: 0 }).replace(">Cook<", ">Cook<") + " = pan or oven on the night.</p>" +
+      '<div class="ov">';
     D.forEach(function (d) {
       var title = parse(d.date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
-      h += '<div class="ov-day"><h2 class="ov-h"><a href="#today/' + d.id + '" class="ov-daylink">' + title + "</a>" + (d.cook ? ' <span class="tag">cook day</span>' : "") + "</h2>";
+      h += '<section class="ov-day" aria-label="' + title + '"><h2 class="ov-h"><a href="#today/' + d.id + '" class="ov-daylink">' + title + "</a>" + (d.cook ? ' <span class="tag">Cook day</span>' : "") + "</h2>";
       SLOTS.forEach(function (s) {
         var id = d[s[0]], ok = d.id + "-" + s[0], o = st[ok] || {}, m = id && M[id];
         var refs = m ? m.uses.map(function (u) { return '<a href="#recipes/c-' + u + '">' + short(u) + "</a> " + amt(u, m.qty && m.qty[u]); }) : [];
         if (m && m.items.length && id !== "birthday") refs.unshift('<a href="#recipes/m-' + id + '">How to assemble</a>');
-        h += '<div class="ov-slot' + (o.out ? " out" : "") + '"><p class="slot">' + s[1] + "</p>" +
-          '<p class="ov-meal">' + (o.out ? "<s>" : "") + (m ? m.name : '<span class="muted">Nothing planned</span>') + (o.out ? "</s>" : "") + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "") + (m && !o.out && m.effort ? "<br>" + effort(m, s[1]) : "") + (o.out ? ' <span class="out-note">Out' + (o.note ? ": " + esc(o.note) : "") + "</span>" : "") + "</p>" +
+        var body = (m && m.effort ? '<p class="wt-eff">' + effort(m, s[1]) + "</p>" : "") +
           (refs.length ? '<ul class="ov-refs">' + refs.map(function (r) { return "<li>" + r + "</li>"; }).join("") + "</ul>" : "") +
-          '<label class="ov-out"><input type="checkbox" data-out="' + ok + '"' + (o.out ? " checked" : "") + "> Eating out / other plans</label>" +
-          '<label class="ov-note"><span class="sr">Note for ' + title + " " + s[1] + '</span><input type="text" data-note="' + ok + '" value="' + esc(o.note) + '" placeholder="Note (optional)" maxlength="60"></label></div>';
+          '<div class="wt-plans"><label class="ov-out"><input type="checkbox" data-out="' + ok + '"' + (o.out ? " checked" : "") + "> Eating out / other plans</label>" +
+          '<label class="ov-note"><span class="sr">Note for ' + title + " " + s[1] + '</span><input type="text" data-note="' + ok + '" value="' + esc(o.note) + '" placeholder="Where or why? (optional)" maxlength="60"></label></div>';
+        h += cx("wk-" + ok, tileHead(d, s, o), body, false).replace('class="cx', 'class="cx wt' + (o.out ? " out" : ""));
       });
-      h += "</div>";
+      h += "</section>";
     });
-    h += '</div><p><button type="button" class="btn" id="ov-submit">Submit changes</button></p><div id="ov-fallback" hidden><p class="small">Couldn\u2019t copy automatically. Select and copy this:</p><textarea id="ov-text" rows="3" readonly></textarea></div>';
-    $("overview-body").innerHTML = h;
+    h += '</div><div id="ov-fallback" hidden><p class="small">Couldn\u2019t copy automatically. Select and copy this:</p><textarea id="ov-text" rows="3" readonly></textarea></div>' +
+      '<button type="button" class="ov-send" id="ov-send" hidden>Send changes to Chef</button>';
+    $("overview-body").innerHTML = h; syncSend();
   }
+  document.addEventListener("input", function (e) { if (e.target.id === "week-note") { lsSet(NOTEKEY, e.target.value); syncSend(); } });
   function collectOut() {
     var st = {}; [].forEach.call(document.querySelectorAll("[data-out]"), function (c) {
       var note = document.querySelector('[data-note="' + c.dataset.out + '"]').value.trim();
@@ -260,16 +286,23 @@
   // Autosave: ticks and notes persist immediately; Submit just builds and copies the summary.
   document.addEventListener("change", function (e) {
     if (!e.target.closest("[data-out],[data-note]")) return;
-    try { lsSet(OUTKEY, JSON.stringify(collectOut())); render(cur); } catch (err) { if (window.console) console.error(err); }
+    try {
+      var st = collectOut(); lsSet(OUTKEY, JSON.stringify(st));
+      var ok = (e.target.dataset.out || e.target.dataset.note), tile = $("cx-wk-" + ok);
+      if (tile) { var di = ok.split("-")[0], sl = ok.split("-")[1], d = D.filter(function (x) { return x.id === di; })[0], s = SLOTS.filter(function (x) { return x[0] === sl; })[0];
+        var o = st[ok] || {}; tile.classList.toggle("out", !!o.out); var hd = tile.querySelector(".cx-h"); hd.innerHTML = tileHead(d, s, o) + CHEV; }
+      render(cur); syncSend();
+    } catch (err) { if (window.console) console.error(err); }
   });
   document.addEventListener("click", function (e) {
-    if (!e.target.closest("#ov-submit")) return;
+    if (!e.target.closest("#ov-send")) return;
     var st = collectOut(); lsSet(OUTKEY, JSON.stringify(st));
     var names = { b: "breakfast", l: "lunch", d: "dinner" }, parts = [];
     D.forEach(function (d) { SLOTS.forEach(function (s) { var o = st[d.id + "-" + s[0]]; if (o && o.out) parts.push(d.label + " " + names[s[0]] + " out" + (o.note ? " (" + o.note + ")" : "")); }); });
     var start = new Date(+D[0].date.slice(0, 4), +D[0].date.slice(5, 7) - 1, +D[0].date.slice(8, 10));
-    var text = "Week of " + start.getDate() + " " + start.toLocaleDateString("en-AU", { month: "short" }) + " changes: " + (parts.length ? parts.join("; ") : "none");
-    overview(); render(cur);
+    var wn = lsGet(NOTEKEY, "").trim();
+    var text = "Week of " + start.getDate() + " " + start.toLocaleDateString("en-AU", { month: "short" }) + " changes: " + (parts.length ? parts.join("; ") : "none") + (wn ? "\nNote: " + wn : "");
+    lsSet(SENTKEY, weekState()); syncSend(); render(cur);
     var fb = function () { $("ov-fallback").hidden = false; var ta = $("ov-text"); ta.value = text; ta.focus(); ta.select(); toast("Saved. Copy the text below"); };
     if (navigator.clipboard && window.isSecureContext !== false) navigator.clipboard.writeText(text).then(function () { toast("Copied, paste this to Chef"); }, fb); else fb();
   });
