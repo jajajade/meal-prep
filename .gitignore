@@ -1,4 +1,8 @@
 qa/
 qa*/
+cookmerge/
+sidenav/
+polish/
+critique/
 *.png.tmp
 __pycache__/
