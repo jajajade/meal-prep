@@ -229,7 +229,7 @@
     if (pill) { pill.hidden = !running; pill.textContent = running + (running === 1 ? " timer running" : " timers running"); }
   }
   setInterval(tickTimers, 1000);
-  function toast(msg) { var el = $("toast"); if (!el) return; el.textContent = msg; el.hidden = false; void el.offsetWidth; el.classList.add("show"); clearTimeout(toast.t); clearTimeout(toast.h);
+  function toast(msg) { var el = $("toast"); if (!el) return; el.textContent = msg; el.hidden = false; el.classList.remove("show"); void el.offsetWidth; el.classList.add("show"); clearTimeout(toast.t); clearTimeout(toast.h); toast.t = setTimeout(function () { el.classList.remove("show"); toast.h = setTimeout(function () { el.hidden = true; }, 300); }, 2500); }
     toast.t = setTimeout(function () { el.classList.remove("show"); toast.h = setTimeout(function () { el.hidden = true; }, 300); }, 2500); }
 
   /* ---- Week overview ---- */

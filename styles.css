@@ -436,7 +436,8 @@ section > h2{margin-top:28px}
 .tabbar{background:rgba(251,251,248,.97);box-shadow:none;border-top:1px solid var(--line)}
 .tabbar a{color:var(--mute);font-weight:700;letter-spacing:.02em;position:relative}
 .tabbar a[aria-current=page]{background:transparent;color:var(--ink)}
-.tabbar a[aria-current=page]::after{content:"";position:absolute;top:4px;width:5px;height:5px;border-radius:50%;background:var(--acc)}
+.tabbar a span{position:relative}
+.tabbar a[aria-current=page] span::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;border-radius:2px;background:var(--ink)}
 .tabbar a[aria-current=page] svg{color:var(--acc)}
 /* drawer / popovers */
 .drawer-panel a[aria-current=page]{background:var(--chip);color:var(--ink);box-shadow:inset 3px 0 0 var(--acc)}
@@ -578,3 +579,8 @@ body[data-view="week"] main{padding-bottom:72px}
 ul.uses,.meal ul.plain,.recipe ul.plain,.cx ul.plain,.wt .ov-refs{list-style:none;padding-left:0;margin:2px 0 8px;font-size:.95rem}
 ul.uses li,.meal ul.plain li,.recipe ul.plain li,.cx ul.plain li,.wt .ov-refs li{position:relative;padding-left:16px;margin:3px 0}
 ul.uses li::before,.meal ul.plain li::before,.recipe ul.plain li::before,.cx ul.plain li::before,.wt .ov-refs li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--ink)}
+
+/* Temporary toast */
+.toast{left:50%;transform:translate(-50%,8px);opacity:0;pointer-events:none;font:700 .95rem "Atkinson Hyperlegible",system-ui,sans-serif;padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--bg);box-shadow:0 6px 20px rgba(31,42,34,.18);transition:opacity .25s ease,transform .25s cubic-bezier(.16,1,.3,1);white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.toast{transition:opacity .2s}}
