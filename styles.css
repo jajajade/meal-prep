@@ -472,3 +472,47 @@ section > h2{margin-top:28px}
 .ov-meal .out-note{font:700 .85rem var(--text);letter-spacing:.02em;margin-left:6px}
 .eff.cook{color:#a8341f}
 .top{background:var(--bg)!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+
+/* ---- Fluid type + phone ergonomics (desktop sizes unchanged at the top of each clamp) ---- */
+h1{font-size:clamp(1.9rem,1.2rem + 3.2vw,3.4rem)}
+.dayhead h1{font-size:clamp(1.65rem,1rem + 3vw,3.2rem);line-height:1.05}
+h2,.sec-h{font-size:clamp(1.35rem,1.05rem + 1.4vw,1.75rem)}
+.meal h3{font-size:clamp(1.2rem,1rem + .9vw,1.5rem)}
+.ov-h{font-size:clamp(1.3rem,1.05rem + 1.1vw,1.6rem)}
+.ov-meal{font-size:clamp(1.12rem,.98rem + .6vw,1.3rem)}
+.step-h{font-size:clamp(1.2rem,1rem + .9vw,1.45rem)}
+.cx-t{font-size:clamp(1.12rem,.98rem + .6vw,1.3rem)}
+.wm-big{font-size:clamp(1.12rem,.95rem + .8vw,1.45rem)}
+.days a b{font-size:clamp(1.15rem,.85rem + 1.4vw,1.5rem)}
+@media (max-width:767px){
+  main{padding-left:18px;padding-right:18px}
+  .bar{padding:4px 12px 0 14px;gap:8px;min-height:48px}
+  .logo{width:28px;height:28px;border-radius:8px}
+  .wm-small{display:none}
+  .wm-big{margin-top:0}
+  .days{padding:2px 8px 6px;gap:2px}
+  .days a{min-height:44px;padding:4px 0;border-radius:9px;gap:0}
+  .days a span{font-size:.72rem}
+  .days a i{font-size:.62rem;letter-spacing:.06em;line-height:1}
+  .fdot{top:4px;right:calc(50% - 18px)}
+  .dayhead{margin:14px 0 8px;grid-template-columns:1fr 44px 44px}
+  .tb .rin{padding:10px 0 6px}
+  .tb-title{font-size:.98rem}
+  .tb-list label{min-height:44px;padding:4px 0}
+  .tb-bar,.cookbar{min-height:48px;padding:10px 0}
+  .cook{padding:10px 0 6px}
+  .sec-h{margin:0 0 10px}
+  .tabs button{min-height:44px}
+  .seg button{min-height:40px}
+  .meal{padding-top:12px!important;padding-bottom:10px!important}
+  .meal .slot{margin:0 0 6px}
+  .ov-day{margin-bottom:12px}
+  section > h2{margin-top:20px}
+  .h-sub{font-size:.9rem;margin-top:4px}
+}
+/* Week: note field only appears once a slot is ticked as out (or already has a note) */
+.ov-slot:has(.ov-out input:not(:checked)) .ov-note:has(input:placeholder-shown){display:none}
+@media (max-width:767px){
+  .cook .seg{margin-top:-2px}
+  .ov-out{min-height:44px}
+}
