@@ -763,3 +763,5 @@ a.eff.merged:hover{background:var(--acc-bg)}
 .after-cook .still b{margin:0 4px;font-family:var(--display);font-weight:400;font-size:1.1rem;color:var(--ink)}
 .after-cook .still::after{content:"\2193";margin-left:auto;padding-left:12px}
 #cook-sec,#meal-dinner,.after-cook{scroll-margin-top:calc(var(--top-h,140px) + 12px)}
+.rcard.dinner .dn-ic{display:flex;width:26px;height:26px;align-items:center;justify-content:center;color:#a8341f}
+.rcard.dinner .dn-ic .ic{width:20px;height:20px}

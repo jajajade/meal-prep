@@ -145,7 +145,21 @@
         '<button type="button" class="rtoggle" aria-expanded="' + open + '" aria-controls="rb-' + id + '"><span class="rname">' + name + (pestle ? ' <span class="tag p">Pestle</span>' : "") + '</span><span class="rmeta">' + c.serves + " · keeps to " + c.keeps + "</span>" + CHEV + "</button></div>" +
         '<div class="rbody" id="rb-' + id + '"' + (open ? "" : " inert") + '><div class="rin">' + recipe(id, true).replace(/<h3>.*?<\/h3>/, "").replace(/<p class="meta">.*?<\/p>/, "") + "</div></div></article>";
     }).join("");
-    return h;
+    return h + dinnerCard(d);
+  }
+  /* Dinner on a cook day: its own card in the cook's Recipes list (extras beyond the batch + pointer). */
+  function dinnerCard(d) {
+    var mode = dinnerMode(d); if (!mode) return "";
+    var id = d.d, m = M[id], st = lsGet(rk("rexp", d, "dinner"), null), open = st === "1";
+    var extra = m.uses.length ? m.items.filter(function (t) { return !/^(1|1½) portions? |^1 jammy egg$/.test(t); }).map(function (t) { return t.replace(/^1 jammy egg AND /, ""); }) : m.items;
+    var batch = m.uses.map(function (u) { var q = (m.qty && m.qty[u]) || 1; return "2 serves " + C[u].name.replace(" (Pestle)", "") + ": " + amt(u, q * 2); });
+    var body = '<article class="recipe">' + (batch.length ? "<h4>From the batch</h4>" + list(batch, false) : "") +
+      "<h4>Also needed (per person, \u00d72 tonight)</h4>" + list(extra, false) +
+      '<p class="merged-note">' + (mode === "merged" ? "The steps are in the cook timeline. <a href=\"#cook-sec\" data-tocook>Go to the timeline</a>" : "Cook this at dinner. <a href=\"#meal-dinner\" data-todinner>See the method</a>") + "</p>" + nut(m.nut) + "</article>";
+    return '<article class="rcard dinner' + (open ? " open" : "") + '" data-rid="dinner"><div class="rhead"><span class="dtick" aria-hidden="true"><span class="dn-ic">' + PAN + "</span></span>" +
+      '<button type="button" class="rtoggle" aria-expanded="' + open + '" aria-controls="rb-dinner"><span class="rname">' + (mode === "merged" ? "Tonight\u2019s dinner: " : "Later, at dinner: ") + m.name + (isPestle(id) ? ' <span class="tag p">Pestle</span>' : "") +
+      '</span><span class="rmeta">' + (mode === "merged" ? "Made during this cook" : "~" + m.cookMins + " min at dinner") + "</span>" + CHEV + "</button></div>" +
+      '<div class="rbody" id="rb-dinner"' + (open ? "" : " inert") + '><div class="rin">' + body + "</div></div></article>";
   }
   function progText(n, t) { return n === t ? "All " + t + " recipes done. Nice work!" : n + " of " + t + " recipes done"; }
   function setOpen(card, open) {
