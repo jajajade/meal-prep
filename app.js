@@ -1,6 +1,7 @@
 /* Renders a week from window.WEEK. Vanilla JS, works on file:// and GitHub Pages. */
 (function () {
   var cur = 0;
+  function RM() { return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }
   var W = window.WEEK, C = W.components, M = W.meals, D = W.days;
   var $ = function (id) { return document.getElementById(id); };
   var todayIso = (function () { var n = new Date(), f = function (x) { return ("0" + x).slice(-2); }; try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(n); } catch (e) { return n.getFullYear() + "-" + f(n.getMonth() + 1) + "-" + f(n.getDate()); } })();
@@ -193,11 +194,13 @@
   var COLS = ["#a8402b", "#3e6140", "#e1ebdd", "#f7e4de", "#c8a24a", "#1f2a22"];
   function celebrate(el, big, card) {
     var rm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (rm) { card.classList.remove("pulse"); void card.offsetWidth; card.classList.add("pulse"); if (big) toast("All recipes done. Enjoy dinner!"); return; }
+    var glow = function () { card.classList.remove("pulse"); void card.offsetWidth; card.classList.add("pulse"); };
+    if (rm || !big || Date.now() - (celebrate.last || 0) < 60000) { glow(); if (big) toast("All recipes done. Enjoy dinner!"); return; }
+    celebrate.last = Date.now();
     var r = el.getBoundingClientRect(), cv = document.createElement("canvas"), dpr = window.devicePixelRatio || 1;
     cv.className = "confetti"; cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; document.body.appendChild(cv);
     var ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
-    var ps = [], n = big ? 160 : 36, dur = big ? 2200 : 1000;
+    var ps = [], n = 90, dur = 1000;
     for (var i = 0; i < n; i++) {
       var ox = big ? innerWidth / 2 : r.left + r.width / 2, oy = big ? innerHeight * 0.35 : r.top + r.height / 2;
       var ang = big ? Math.random() * Math.PI * 2 : -Math.PI / 2 + (Math.random() - .5) * 2.2, sp = (big ? 6 : 4) + Math.random() * (big ? 8 : 5);
@@ -259,7 +262,12 @@
     if (pill) { pill.hidden = !running; pill.textContent = running + (running === 1 ? " timer running" : " timers running"); }
   }
   setInterval(tickTimers, 1000);
-  function toast(msg) { var el = $("toast"); if (!el) return; el.textContent = msg; el.hidden = false; el.classList.remove("show"); void el.offsetWidth; el.classList.add("show"); clearTimeout(toast.t); clearTimeout(toast.h); toast.t = setTimeout(function () { el.classList.remove("show"); toast.h = setTimeout(function () { el.hidden = true; }, 300); }, 2500); }
+  function toast(msg) { var el = $("toast"); if (!el) return; clearTimeout(toast.t); clearTimeout(toast.h);
+    var showing = !el.hidden && el.classList.contains("show") && !el.classList.contains("out");
+    el.textContent = msg; el.classList.remove("out");
+    if (showing) { if (!RM() && el.animate) el.animate([{ opacity: .35 }, { opacity: 1 }], { duration: 150, easing: "ease-out" }); }
+    else { el.hidden = false; el.classList.remove("show"); void el.offsetWidth; el.classList.add("show"); }
+    toast.t = setTimeout(function () { el.classList.add("out"); el.classList.remove("show"); toast.h = setTimeout(function () { el.hidden = true; el.classList.remove("out"); }, 160); }, 2500); }
 
   /* ---- Week overview ---- */
   var SLOTS = [["b", "Breakfast"], ["l", "Lunch"], ["d", "Dinner"]];
@@ -397,7 +405,7 @@
       if (all && !bx.classList.contains("is-done")) {
         bx.classList.add("is-done"); bar.hidden = false;
         if (bx === box) celebrate(cb.nextElementSibling || cb, false, bx);
-        setTimeout(function () { tbOpen(bx, false); }, 700);
+        setTimeout(function () { tbOpen(bx, false); }, 600);
       } else if (!all && bx.classList.contains("is-done")) { bx.classList.remove("is-done"); bar.hidden = true; tbOpen(bx, true); }
     });
   });
@@ -580,6 +588,7 @@
   var base = location.pathname.indexOf("/weeks/") > -1 ? "../" : "";
   function iso(dt) { return dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2); }
   route();
+  requestAnimationFrame(function () { requestAnimationFrame(function () { document.documentElement.classList.add("booted"); }); });
 
   /* ---- Previous / next day (arrows, keys, swipe) ---- */
   function weekAt(dateIso) { var r = null; (window.WEEKS || []).forEach(function (w) { if (w.start && w.end && w.start <= dateIso && dateIso <= w.end && w.start !== D[0].date) r = w; }); return r; }

@@ -765,3 +765,42 @@ a.eff.merged:hover{background:var(--acc-bg)}
 #cook-sec,#meal-dinner,.after-cook{scroll-margin-top:calc(var(--top-h,140px) + 12px)}
 .rcard.dinner .dn-ic{display:flex;width:26px;height:26px;align-items:center;justify-content:center;color:#a8341f}
 .rcard.dinner .dn-ic .ic{width:20px;height:20px}
+
+/* ===================== Motion system (Oct 2026) ===================== */
+:root{--ease:cubic-bezier(.2,.8,.2,1);--t-xs:120ms;--t-s:150ms;--t-m:200ms;--t-l:240ms;--t-close:170ms}
+/* 4. One easing, quicker durations; closing ~30% faster than opening */
+.chev,.cx.open .chev{transition:transform var(--t-m) var(--ease)}
+.cx-b,.rbody{transition:grid-template-rows var(--t-l) var(--ease)}
+.cx:not(.open) .cx-b,.rcard:not(.open) .rbody{transition-duration:var(--t-close)}
+.tb-body{transition:grid-template-rows 260ms var(--ease)}
+.tb.collapsed .tb-body{transition-duration:180ms}
+.cookbody{transition:grid-template-rows 260ms var(--ease),opacity var(--t-m) var(--ease)}
+.cookwrap.collapsed .cookbody{transition-duration:180ms,var(--t-xs)}
+.rmeter span{transition:width var(--t-l) var(--ease)}
+.dtick .box{transition:background-color var(--t-s) var(--ease)}
+.dtick .box path{transition:stroke-dashoffset 160ms var(--ease) 40ms}
+.rcard{transition:background-color var(--t-m) var(--ease)}
+.view:not([hidden]){animation:none}
+@media (prefers-reduced-motion:no-preference){
+  .booted .view:not([hidden]){animation:viewIn 180ms var(--ease)}
+  @keyframes viewIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+}
+/* 6. Ticks: quick press, strike fades in with the dim */
+.check label input{transition:transform var(--t-xs) var(--ease)}
+.check label:active input{transform:scale(.88)}
+.check input+span{text-decoration:line-through;text-decoration-color:transparent;transition:color var(--t-s) var(--ease),text-decoration-color var(--t-s) var(--ease)}
+.check input:checked+span{color:var(--mute);text-decoration-color:currentColor}
+.tb-list li.tb-pop span{animation:tbpop var(--t-xs) var(--ease)}
+@keyframes tbpop{from{transform:scale(.97)}to{transform:none}}
+.tb-list li span{display:inline-block;transform-origin:left center}
+/* 12. Glow instead of confetti for single ticks */
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(194,65,45,.28)}100%{box-shadow:0 0 0 12px rgba(194,65,45,0)}}
+.rcard.pulse,.tb.pulse{animation:pulse 500ms var(--ease)}
+/* 8. Tab + sidebar underline grows from centre, icon colour fades */
+.tabbar a span::after,.sn-links a span::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;border-radius:2px;background:var(--ink);transform:scaleX(0);transition:transform 180ms var(--ease)}
+.tabbar a[aria-current=page] span::after,.sn-links a[aria-current=page] span::after{transform:scaleX(1)}
+.tabbar a svg,.sn-links a svg,.tabbar a,.sn-links a{transition:color var(--t-s) var(--ease),background-color var(--t-s) var(--ease)}
+@media (min-width:1280px){.sn-links a span::after{bottom:-3px}}
+/* 13. Toast: 200ms in, 150ms fade-only out */
+.toast{transition:opacity var(--t-m) var(--ease),transform var(--t-m) var(--ease)}
+.toast.out{transform:translate(-50%,0);transition:opacity var(--t-s) ease-out}
