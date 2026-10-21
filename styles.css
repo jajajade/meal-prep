@@ -594,7 +594,7 @@ ul.uses li::before,.meal ul.plain li::before,.recipe ul.plain li::before,.cx ul.
 .cal-grid .today.cook::after{background:#f08a75}
 .cal-key{flex-wrap:nowrap;gap:16px;justify-content:center;font-size:.8rem;color:var(--mute);white-space:nowrap}
 .cal-key .ki{display:inline-flex;align-items:center;gap:6px}
-.cal-key .k{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.7rem;font-weight:700;background:none;border:0;box-shadow:none}
+.cal-key .k{margin:0;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.7rem;font-weight:700;background:none;border:0;box-shadow:none}
 .cal-key .k.plan{color:var(--ink)}
 .cal-key .k.today{background:var(--ink);color:var(--bg)}
 .cal-key .k.cook{width:6px;height:6px;background:var(--acc)}
