@@ -65,7 +65,7 @@
     return '<div class="meal"' + (/^dinner$/i.test(slot) ? ' id="meal-dinner"' : "") + ">" + "<h3>" + m.name + (alt ? ' <span class="muted">' + alt + "</span>" : "") + "</h3>" + '<p class="slot">' + slot + " " + (merged ? MERGED : m.effort ? effort(m, slot) : (m.time ? '<span class="muted">· ' + m.time + "</span>" : "")) + "</p>" + uses +
       (function () { var extra = m.uses.length ? m.items.filter(function (t) { return !/^(1|1½) portions? |^1 jammy egg$/.test(t); }) : m.items;
         return extra.length ? (m.uses.length ? '<p class="uses-h">Plus:</p>' : "") + list(extra.map(function (t) { return t.replace(/^1 jammy egg AND /, ""); }), false) : ""; })() + (m.atWork && /lunch/i.test(slot) ? (function () { var w = lsGet("lunchmode", "work") === "work";
-          return '<div class="seg lmode" role="group" aria-label="Where are you eating?"><button type="button" data-lmode="work" aria-pressed="' + w + '">At work</button><button type="button" data-lmode="home" aria-pressed="' + !w + '">At home</button></div>' +
+          return '<div class="seg lmode" role="group" aria-label="Where are you eating?" data-mid="' + id + '" style="--on:' + (w ? 0 : 1) + '"><button type="button" data-lmode="work" aria-pressed="' + w + '">At work</button><button type="button" data-lmode="home" aria-pressed="' + !w + '">At home</button></div>' +
             '<ol class="quick">' + (w ? m.atWork : m.steps).map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>"; })() :
         merged ? '<p class="merged-note">Cooked as part of today\u2019s cook plan, so the steps are in the timeline above. <a href="#cook-sec" data-tocook>Go to the cook</a></p>' : (m.steps.length ? '<ol class="quick">' + m.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" : "")) + nut(m.nut) + "</div>";
   }
@@ -105,6 +105,14 @@
     return '<button type="button" class="timer" data-timer="' + key + '" data-min="' + min + '">Start ' + fmtMin(min) + "</button>";
   }
   function fmtMin(m) { return m % 1 ? Math.floor(m) + "½ min" : m + " min"; }
+  function cookSteps(d, n) {
+    var p = d.cook.plan, k = "tick:" + W.range + ":" + d.id + ":", h = "";
+    var step = function (c, i) { return '<li><label><input type="checkbox" data-k="' + k + "cook-" + i + '"><span>' + (n === "1" ? "" : "") + c.t + "</span></label>" + (c.min ? timerBtn(d.id + "-" + i, c.min) : "") + "</li>"; };
+    if (n === "1") h += '<ol class="check cooklist">' + p.cook.map(step).join("") + "</ol>";
+    else h += '<div class="lanes">' + ["A", "B"].map(function (who) {
+      return '<div class="lane"><h4>Person ' + who + "</h4><ol class=\"check cooklist\">" + p.cook.map(function (c, i) { return c.a === who ? step(c, i) : ""; }).join("") + "</ol></div>"; }).join("") + "</div>";
+    return h;
+  }
   function cookSection(d) {
     var p = d.cook.plan, tab = lsGet("cooktab", "plan"), n = lsGet("cooks", "1"), k = "tick:" + W.range + ":" + d.id + ":";
     var h = '<section class="cook"><h2 class="sec-h"><svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM2 10h2M20 10h2M9 6c0-1 1-1 1-2M14 6c0-1 1-1 1-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Cook today <span class="muted">' + (p ? p.time : d.cook.time) + "</span></h2>";
@@ -113,15 +121,11 @@
       '<button type="button" role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="' + (tab === "plan") + '" data-ctab="plan">Cook plan</button>' +
       '<button type="button" role="tab" id="tab-rec" aria-controls="panel-rec" aria-selected="' + (tab === "rec") + '" data-ctab="rec">Recipes</button></div>';
     h += '<div role="tabpanel" id="panel-plan" aria-labelledby="tab-plan"' + (tab === "plan" ? "" : " hidden") + ">";
-    h += '<div class="seg" role="group" aria-label="Number of cooks"><button type="button" data-cooks="1" aria-pressed="' + (n === "1") + '">1 cook</button><button type="button" data-cooks="2" aria-pressed="' + (n === "2") + '">2 cooks</button></div>';
+    h += '<div class="seg" role="group" aria-label="Number of cooks" style="--on:' + (n === "2" ? 1 : 0) + '"><button type="button" data-cooks="1" aria-pressed="' + (n === "1") + '">1 cook</button><button type="button" data-cooks="2" aria-pressed="' + (n === "2") + '">2 cooks</button></div>';
     h += '<h3 class="step-h">1. Get out</h3>' + Object.keys(p.getout).map(function (g) { return '<h4>' + g + "</h4>" + list(p.getout[g], true, k + "get" + g); }).join("");
     h += '<h3 class="step-h">2. Weigh &amp; measure</h3>' + list(p.weigh.map(function (w) { return w[0] + ' <span class="rtag">' + w[1] + "</span>"; }), true, k + "weigh");
     h += '<h3 class="step-h">3. Bulk prep</h3>' + list(p.bulk, true, k + "bulk");
-    h += '<h3 class="step-h">4. Cook</h3>';
-    var step = function (c, i) { return '<li><label><input type="checkbox" data-k="' + k + "cook-" + i + '"><span>' + (n === "1" ? "" : "") + c.t + "</span></label>" + (c.min ? timerBtn(d.id + "-" + i, c.min) : "") + "</li>"; };
-    if (n === "1") h += '<ol class="check cooklist">' + p.cook.map(step).join("") + "</ol>";
-    else h += '<div class="lanes">' + ["A", "B"].map(function (who) {
-      return '<div class="lane"><h4>Person ' + who + "</h4><ol class=\"check cooklist\">" + p.cook.map(function (c, i) { return c.a === who ? step(c, i) : ""; }).join("") + "</ol></div>"; }).join("") + "</div>";
+    h += '<h3 class="step-h">4. Cook</h3><div id="cooksteps">' + cookSteps(d, n) + "</div>";
     h += '<h3 class="step-h">5. Pack</h3>' + list(p.pack, true, k + "pack");
     if (dinnerMode(d) === "after") { var dm = M[d.d];
       h += '<div class="after-cook"><p class="pause">Good place to stop; come back at dinner.</p><a class="still" href="#meal-dinner" data-todinner>Still to do at dinner: <b>' + dm.name + "</b> \u00b7 ~" + dm.cookMins + " min</a></div>"; }
@@ -218,12 +222,17 @@
 
   document.addEventListener("click", function (e) {
     var t = e.target.closest("[data-ctab]"); if (t) { lsSet("cooktab", t.dataset.ctab); render(cur); var b = $(t.dataset.ctab === "plan" ? "tab-plan" : "tab-rec"); if (b) b.focus(); return; }
-    var c = e.target.closest("[data-cooks]"); if (c) { lsSet("cooks", c.dataset.cooks); render(cur); var b2 = document.querySelector('[data-cooks="' + c.dataset.cooks + '"]'); if (b2) b2.focus(); return; }
+    var c = e.target.closest("[data-cooks]"); if (c) { lsSet("cooks", c.dataset.cooks);
+      var g = c.closest(".seg"), box = $("cooksteps"); g.style.setProperty("--on", c.dataset.cooks === "2" ? 1 : 0);
+      [].forEach.call(g.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", x === c); });
+      if (box) { box.innerHTML = cookSteps(D[cur], c.dataset.cooks); restore(); tickTimers(); if (box.animate) box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: RM() ? 100 : 150, easing: "ease-out" }); }
+      return; }
     var tm = e.target.closest("[data-timer]"); if (tm) { toggleTimer(tm.dataset.timer, +tm.dataset.min); return; }
     var r = e.target.closest("[data-ref]"); if (r) { e.preventDefault(); var det = $(r.dataset.ref); if (det) { det.open = true; det.scrollIntoView({ block: "start" }); det.querySelector("summary").focus(); } }
   });
 
-  function scrollToEl(id) { var el = $(id); if (!el) return; el.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }
+  function scrollToEl(id) { var el = typeof id === "string" ? $(id) : id; if (!el) return; el.scrollIntoView({ block: "start", behavior: RM() ? "auto" : "smooth" }); landed(el); }
+  function landed(el) { el.classList.remove("landed"); clearTimeout(landed.t); landed.t = setTimeout(function () { void el.offsetWidth; el.classList.add("landed"); setTimeout(function () { el.classList.remove("landed"); }, 900); }, RM() ? 0 : 320); }
   document.addEventListener("click", function (e) {
     var a = e.target.closest("[data-tocook],[data-todinner]"); if (a) { e.preventDefault(); scrollToEl(a.hasAttribute("data-todinner") ? "meal-dinner" : "cook-sec"); return; }
     var w = e.target.closest("[data-tocook-day]"); if (w) { e.preventDefault(); e.stopPropagation(); location.hash = "#today/" + w.dataset.tocookDay; setTimeout(function () { scrollToEl("cook-sec"); }, 60); }
@@ -299,13 +308,25 @@
     $("wk-text").textContent = v;
   }
   function noteEdit(on) {
-    $("wk-field").hidden = !on; noteUI();
+    var f = $("wk-field"), from = on ? $("wk-add") : null, h0 = from && !from.hidden ? from.offsetHeight : 0;
+    f.hidden = !on; noteUI();
+    if (!RM() && f.animate && on && h0) { var h1 = f.offsetHeight; f.style.overflow = "hidden";
+      f.animate([{ height: h0 + "px", borderRadius: "999px", opacity: .6 }, { height: h1 + "px", borderRadius: "10px", opacity: 1 }], { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" }).onfinish = function () { f.style.overflow = ""; }; }
+    if (!on && $("wk-saved").animate && !$("wk-saved").hidden) $("wk-saved").animate([{ opacity: 0 }, { opacity: 1 }], { duration: RM() ? 100 : 150, easing: "ease-out" });
     if (on) { var t = $("week-note"); t.focus(); t.setSelectionRange(t.value.length, t.value.length); } else { var f = lsGet(NOTEKEY, "").trim() ? $("wk-edit") : $("wk-add"); if (f) f.focus(); }
   }
   document.addEventListener("click", function (e) {
     if (e.target.closest("#wk-add, #wk-edit")) noteEdit(true);
     else if (e.target.closest("#wk-done")) noteEdit(false);
-    else if (e.target.closest("#ov-past")) { var ov = document.querySelector(".ov"), on = !ov.classList.contains("show-past"); ov.classList.toggle("show-past", on); e.target.closest("#ov-past").setAttribute("aria-expanded", on); e.target.closest("#ov-past").querySelector(".pl").textContent = on ? "Hide earlier days" : e.target.closest("#ov-past").dataset.label; }
+    else if (e.target.closest("#ov-past")) { var ov = document.querySelector(".ov"), on = !ov.classList.contains("show-past"), pd = [].slice.call(ov.querySelectorAll(".ov-day.past"));
+      var anim = !RM() && pd.length && pd[0].animate;
+      if (on) { ov.classList.add("show-past"); if (anim) pd.forEach(function (x) { var h = x.offsetHeight; x.style.overflow = "hidden";
+          x.animate([{ height: 0, marginBottom: 0, paddingTop: 0 }, { height: h + "px" }], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" }).onfinish = function () { x.style.overflow = ""; };
+          x.animate([{ opacity: 0 }, { opacity: 0, offset: .25 }, { opacity: .6 }], { duration: 240, easing: "ease-out" }); }); }
+      else if (anim) { pd.forEach(function (x, i) { var h = x.offsetHeight; x.style.overflow = "hidden";
+          var a = x.animate([{ height: h + "px", opacity: .6 }, { height: 0, marginBottom: 0, paddingTop: 0, opacity: 0 }], { duration: 170, easing: "cubic-bezier(.2,.8,.2,1)" });
+          a.onfinish = function () { x.style.overflow = ""; if (i === pd.length - 1) ov.classList.remove("show-past"); }; }); }
+      else ov.classList.remove("show-past"); e.target.closest("#ov-past").setAttribute("aria-expanded", on); e.target.closest("#ov-past").querySelector(".pl").textContent = on ? "Hide earlier days" : e.target.closest("#ov-past").dataset.label; }
   });
   function overview() {
     var st = outState(), note = lsGet(NOTEKEY, "");
@@ -370,7 +391,15 @@
 
   document.addEventListener("click", function (e) {
     var b = e.target.closest("[data-lmode]"); if (!b) return;
-    lsSet("lunchmode", b.dataset.lmode); render(cur);
+    lsSet("lunchmode", b.dataset.lmode);
+    // Scoped update: only the toggle and the steps below it change; scroll and focus stay put.
+    [].forEach.call(document.querySelectorAll(".seg.lmode"), function (g) {
+      var w = b.dataset.lmode === "work", m = M[g.dataset.mid]; g.style.setProperty("--on", w ? 0 : 1);
+      [].forEach.call(g.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", x.dataset.lmode === b.dataset.lmode); });
+      var ol = g.nextElementSibling; if (!ol || !m) return;
+      ol.innerHTML = (w ? m.atWork : m.steps).map(function (s) { return "<li>" + s + "</li>"; }).join("");
+      if (ol.animate) ol.animate([{ opacity: 0 }, { opacity: 1 }], { duration: RM() ? 100 : 150, easing: "ease-out" });
+    });
   });
   /* ---- Tickable reminder boxes ---- */
   function tbk(id, i) { return id.indexOf("nb:") === 0 ? id + "-" + i : "tb:" + W.range + ":" + id + ":" + i; }
@@ -491,7 +520,7 @@
   });
   document.addEventListener("click", function (e) {
     var b = e.target.closest("[data-repeat]"); if (!b) return; var el = $("cx-" + b.dataset.repeat); if (!el) return;
-    if (!el.classList.contains("open")) cxOpen(el, true); el.scrollIntoView({ block: "start", behavior: "smooth" }); el.querySelector(".cx-h").focus({ preventScroll: true });
+    if (!el.classList.contains("open")) cxOpen(el, true); scrollToEl(el); el.querySelector(".cx-h").focus({ preventScroll: true });
   });
   function repeatList(id) {
     return Object.keys(W.repeat).map(function (g) { return '<h3 class="grp">' + g + "</h3>" + list(W.repeat[g], false); }).join("") +
@@ -677,12 +706,15 @@
 
   /* ---- Calendar popover ---- */
   var opener = null;
-  function closeCal(restore) { var el = $("cal-pop"); if (el.hidden) return; el.hidden = true; $("cal-btn").setAttribute("aria-expanded", "false"); if (restore && opener) opener.focus(); opener = null; }
+  function closeCal(restore) { var el = $("cal-pop"); if (el.hidden || el.classList.contains("leaving")) return;
+    el.classList.remove("in"); el.classList.add("leaving"); $("cal-btn").setAttribute("aria-expanded", "false");
+    clearTimeout(closeCal.t); closeCal.t = setTimeout(function () { el.hidden = true; el.classList.remove("leaving"); }, RM() ? 0 : 130);
+    if (restore && opener) opener.focus(); opener = null; }
   function openCal() {
-    var b = $("cal-btn"), el = $("cal-pop"); el.hidden = false; b.setAttribute("aria-expanded", "true"); opener = b; drawCal();
+    var b = $("cal-btn"), el = $("cal-pop"); clearTimeout(closeCal.t); el.classList.remove("leaving"); el.hidden = false; void el.offsetWidth; el.classList.add("in"); b.setAttribute("aria-expanded", "true"); opener = b; drawCal();
     var f = el.querySelector(".sel") || el.querySelector("button[data-day]") || el.querySelector("a, button:not([disabled])"); if (f) f.focus();
   }
-  $("cal-btn").onclick = function (e) { e.stopPropagation(); $("cal-pop").hidden ? openCal() : closeCal(true); };
+  $("cal-btn").onclick = function (e) { e.stopPropagation(); ($("cal-pop").hidden || $("cal-pop").classList.contains("leaving")) ? openCal() : closeCal(true); };
   document.addEventListener("click", function (e) { if (!e.target.closest(".pop") && !e.target.closest("#cal-btn")) closeCal(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeCal(true); });
 

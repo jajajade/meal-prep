@@ -816,3 +816,22 @@ a.eff.merged:hover{background:var(--acc-bg)}
 /* 2. Day change: direction-aware slide (WAAPI in app.js) */
 #v-today{touch-action:pan-y}
 .days a,.days a span,.days a b,.days a i{transition:color 220ms var(--ease)}
+
+/* 5. Segmented toggles: the selected background slides */
+.seg{position:relative;display:inline-grid!important;grid-template-columns:1fr 1fr;isolation:isolate}
+.seg::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:8px;background:var(--ink);transform:translateX(calc(var(--on,0) * 100%));transition:transform 180ms var(--ease);z-index:-1}
+.seg button,.seg button[aria-pressed=true],.seg.lmode button[aria-pressed=true]{background:transparent!important;position:relative;transition:color var(--t-s) var(--ease)}
+.seg button[aria-pressed=true]{color:var(--bg)!important}
+/* 7. Calendar popover: scale/fade from the button */
+.pop{transform-origin:top right;opacity:0;transform:translateY(-4px) scale(.96);transition:opacity var(--t-xs) ease-out,transform var(--t-xs) ease-out}
+.pop.in{opacity:1;transform:none;transition:opacity 180ms var(--ease),transform 180ms var(--ease)}
+/* 11. Landing highlight after a scroll-to link */
+@keyframes landed{0%{background-color:rgba(194,65,45,.10)}100%{background-color:rgba(194,65,45,0)}}
+.landed{animation:landed 600ms ease-out}
+/* Reduced motion: no movement anywhere; only short fades survive */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important;scroll-behavior:auto!important}
+  .toast,.pop,.check input+span{transition:opacity 100ms linear,color 100ms linear!important}
+  .toast,.toast.show,.pop,.pop.in{transform:translate(-50%,0)}.pop,.pop.in{transform:none}
+  .landed{animation:landed 400ms linear!important}
+}
