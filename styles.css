@@ -572,3 +572,7 @@ body[data-view="week"] main{padding-bottom:72px}
 .seg.lmode{display:inline-flex;margin:4px 0 2px}
 .seg.lmode button{min-height:40px;padding:0 14px;font:700 .85rem var(--text);border:0;color:var(--ink);cursor:pointer}
 .seg.lmode button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+/* One ingredient-bullet style everywhere: small neutral ink dot */
+ul.uses,.meal ul.plain,.recipe ul.plain,.cx ul.plain,.wt .ov-refs{list-style:none;padding-left:0;margin:2px 0 8px;font-size:.95rem}
+ul.uses li,.meal ul.plain li,.recipe ul.plain li,.cx ul.plain li,.wt .ov-refs li{position:relative;padding-left:16px;margin:3px 0}
+ul.uses li::before,.meal ul.plain li::before,.recipe ul.plain li::before,.cx ul.plain li::before,.wt .ov-refs li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--ink)}
