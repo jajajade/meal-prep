@@ -460,8 +460,16 @@
     var nw = new Date(), td = nw.getFullYear() + "-" + ("0" + (nw.getMonth() + 1)).slice(-2) + "-" + ("0" + nw.getDate()).slice(-2);
     $("days").innerHTML = D.map(function (d, i) {
       return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"' + (d.date < todayIso ? ' class="past"' : "") + '><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.date < todayIso ? '<i class="mk" aria-hidden="true"></i>' : d.cook ? '<i class="mk">cook</i>' : freshDay(d) ? '<i class="mk"><em class="fdot" title="Cooking fresh tonight"></em></i>' : '<i class="mk" aria-hidden="true"></i>') + "</a>";
-    }).join("");
+    }).join("") + '<span class="dpill" id="dpill" aria-hidden="true"></span>';
   }
+  /* 3. Date-strip pill: one element that glides to the selected day */
+  function movePill() {
+    var pill = $("dpill"), a = document.querySelector('#days a[aria-current="true"]'); if (!pill || !a || !a.offsetWidth) return;
+    pill.style.width = a.offsetWidth + "px"; pill.style.height = a.offsetHeight + "px";
+    pill.style.transform = "translate(" + a.offsetLeft + "px," + a.offsetTop + "px)";
+    if (!pill.classList.contains("ready")) { void pill.offsetWidth; requestAnimationFrame(function () { pill.classList.add("ready"); }); }
+  }
+  window.addEventListener("resize", function () { var p = $("dpill"); if (p) { p.classList.remove("ready"); movePill(); } });
 
   /* ---- One expand/collapse pattern (Recipes library, repeat lists) ---- */
   function cx(key, head, body, defOpen) {
@@ -562,7 +570,8 @@
     if (tab === "today") {
       var di = -1; if (sub) for (var k = 0; k < D.length; k++) if (D[k].id === sub) di = k;
       if (di < 0) di = dayChosen ? cur : todayIdx();
-      if (di !== cur || !rendered) { cur = di; render(cur); rendered = true; }
+      if (!rendered) { cur = di; render(cur); rendered = true; }
+      else if (di !== cur) navDay(di);
       dayChosen = true;
       [].forEach.call(document.querySelectorAll("#days a"), function (a, j) { a.setAttribute("aria-current", j === cur ? "true" : "false"); });
     }
@@ -580,7 +589,15 @@
   window.addEventListener("load", function () { syncTopH(); if (!/^#recipes\/./.test(location.hash)) toTop(); });
   window.addEventListener("hashchange", function () { setTimeout(syncTopH, 0); });
   window.addEventListener("hashchange", route);
-  render = (function (r) { return function (i) { r(i); if (typeof dayNav === "function" && typeof IDS !== "undefined") dayNav(); [].forEach.call(document.querySelectorAll("#days a"), function (a, j) { a.setAttribute("aria-current", j === i ? "true" : "false"); }); }; })(render);
+  /* 2. Direction-aware day change: content slides 24px from the travel side (Web Animations; works on every Safari); 120ms crossfade for reduced motion */
+  var swipeNav = null;
+  function navDay(di) {
+    var dir = di > cur ? 1 : -1, v = $("v-today"), go = function () { cur = di; render(cur); };
+    if (swipeNav) { var sw = swipeNav; swipeNav = null; go(); sw(); return; }
+    if (RM()) { go(); if (v.animate) v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: "linear" }); return; }
+    go(); if (v.animate) v.animate([{ opacity: 0, transform: "translateX(" + 24 * dir + "px)" }, { opacity: 1, transform: "none" }], { duration: 200, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
+  render = (function (r) { return function (i) { r(i); if (typeof dayNav === "function" && typeof IDS !== "undefined") dayNav(); [].forEach.call(document.querySelectorAll("#days a"), function (a, j) { a.setAttribute("aria-current", j === i ? "true" : "false"); }); movePill(); }; })(render);
 
   staticParts(); refParts(); overview();
   cur = todayIdx();
@@ -613,12 +630,50 @@
     if (!$("cal-pop").hidden) return;
     if (e.key === "ArrowLeft") { e.preventDefault(); goDay(-1); } else if (e.key === "ArrowRight") { e.preventDefault(); goDay(1); }
   });
-  var sx = null, sy = 0;
-  $("today-body").addEventListener("touchstart", function (e) { if (e.touches.length !== 1) { sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-  $("today-body").addEventListener("touchend", function (e) {
-    if (sx === null) return; var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
-    if (Math.abs(dx) > 70 && Math.abs(dy) < 40 && !e.target.closest(".scroll, input, textarea")) goDay(dx < 0 ? 1 : -1);
-  }, { passive: true });
+  /* 1. Swipe between days: content follows the finger (horizontal lock), rubber-band at the ends,
+     220ms settle / 180ms spring-back; reduced motion = no tracking, 120ms crossfade. */
+  (function () {
+    var v = $("v-today"), st = null, EASE = "cubic-bezier(.2,.8,.2,1)";
+    function blocked(t) {
+      var ae = document.activeElement; if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "checkbox") return true;
+      var sel = window.getSelection && getSelection(); if (sel && String(sel).length) return true;
+      return !!(t.closest && t.closest("input[type=text], textarea, select, .scroll, .cal-grid")) || !$("cal-pop").hidden;
+    }
+    function setX(x) { v.style.transform = x ? "translate3d(" + x + "px,0,0)" : ""; }
+    v.addEventListener("touchstart", function (e) {
+      if (e.touches.length !== 1 || blocked(e.target)) { st = null; return; }
+      var t = e.touches[0]; st = { x: t.clientX, y: t.clientY, t: Date.now(), axis: null, dx: 0, lx: t.clientX, lt: Date.now(), vx: 0 };
+    }, { passive: true });
+    v.addEventListener("touchmove", function (e) {
+      if (!st) return; if (e.touches.length !== 1) { st = null; setX(0); return; }
+      var t = e.touches[0], dx = t.clientX - st.x, dy = t.clientY - st.y;
+      if (!st.axis) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; st.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y"; }
+      if (st.axis !== "x") return;
+      e.preventDefault();
+      var now = Date.now(); st.vx = (t.clientX - st.lx) / Math.max(1, now - st.lt); st.lx = t.clientX; st.lt = now; st.dx = dx;
+      if (RM()) return;
+      var has = !!adj(dx < 0 ? 1 : -1), x = has ? dx : (dx > 0 ? 1 : -1) * Math.min(64, Math.pow(Math.abs(dx), .8) * .35);
+      v.style.willChange = "transform"; setX(x);
+    }, { passive: false });
+    function end() {
+      if (!st || st.axis !== "x") { st = null; return; }
+      var dx = st.dx, vx = st.vx, W = v.offsetWidth || innerWidth; st = null;
+      var delta = dx < 0 ? 1 : -1, href = adj(delta), commit = href && (Math.abs(dx) > W * .22 || (Math.abs(vx) > .45 && Math.abs(dx) > 30));
+      var from = v.style.transform || "none"; v.style.willChange = "";
+      if (!commit) { setX(0); if (!RM() && v.animate && from !== "none") v.animate([{ transform: from }, { transform: "none" }], { duration: 180, easing: "cubic-bezier(.3,1.35,.5,1)" }); return; }
+      if (RM()) { goDay(delta); return; }
+      var out = v.animate ? v.animate([{ transform: from, opacity: 1 }, { transform: "translate3d(" + (-delta * W) + "px,0,0)", opacity: .2 }], { duration: 120, easing: "cubic-bezier(.4,0,1,1)", fill: "forwards" }) : null;
+      var next = function () {
+        if (href.charAt(0) !== "#") { location.href = href; return; }
+        swipeNav = function () { if (out) out.cancel(); setX(0); toTop();
+          if (v.animate) v.animate([{ transform: "translate3d(" + (delta * W * .3) + "px,0,0)", opacity: .2 }, { transform: "none", opacity: 1 }], { duration: 220, easing: EASE }); };
+        location.hash = href;
+      };
+      if (out) out.onfinish = next; else next();
+    }
+    v.addEventListener("touchend", end, { passive: true });
+    v.addEventListener("touchcancel", function () { if (st) { st = null; setX(0); } }, { passive: true });
+  })();
 
   /* ---- Calendar popover ---- */
   var opener = null;

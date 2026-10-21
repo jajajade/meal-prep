@@ -804,3 +804,15 @@ a.eff.merged:hover{background:var(--acc-bg)}
 /* 13. Toast: 200ms in, 150ms fade-only out */
 .toast{transition:opacity var(--t-m) var(--ease),transform var(--t-m) var(--ease)}
 .toast.out{transform:translate(-50%,0);transition:opacity var(--t-s) ease-out}
+
+/* 3. Gliding date pill */
+.days{position:relative}
+.days a{position:relative;z-index:1}
+.days a[aria-current=true]{background:transparent!important}
+.dpill{position:absolute;left:0;top:0;width:0;height:0;border-radius:10px;background:var(--ink);z-index:0;pointer-events:none}
+.dpill.ready{transition:transform 220ms var(--ease),width 220ms var(--ease)}
+@media (max-width:767px){.dpill{border-radius:9px}}
+.days a.past[aria-current=true]~.dpill,.days:has(a.past[aria-current=true]) .dpill{opacity:1}
+/* 2. Day change: direction-aware slide (WAAPI in app.js) */
+#v-today{touch-action:pan-y}
+.days a,.days a span,.days a b,.days a i{transition:color 220ms var(--ease)}
