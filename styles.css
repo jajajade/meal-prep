@@ -516,3 +516,4 @@ h2,.sec-h{font-size:clamp(1.35rem,1.05rem + 1.4vw,1.75rem)}
   .cook .seg{margin-top:-2px}
   .ov-out{min-height:44px}
 }
+@media (max-width:767px){.days a i{font-size:.7rem;letter-spacing:.04em}}
