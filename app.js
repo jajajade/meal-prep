@@ -341,7 +341,7 @@
     [].forEach.call(document.querySelectorAll('[data-tb="' + id + '"] [data-tbk="' + cb.dataset.tbk + '"]'), function (x) { x.checked = cb.checked; });
     if (cb.checked) { li.classList.remove("tb-pop"); void li.offsetWidth; li.classList.add("tb-pop"); setTimeout(function () { li.classList.remove("tb-pop"); }, 500); }
     var all = tbAll(id, n);
-    if (cb.checked && !all) toast("Ticked off");
+    if (cb.checked) toast(all ? "All done here. Nice!" : "Ticked off");
     [].forEach.call(document.querySelectorAll('[data-tb="' + id + '"]'), function (bx) {
       var bar = bx.querySelector(".tb-bar");
       if (all && !bx.classList.contains("is-done")) {
