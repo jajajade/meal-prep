@@ -13,7 +13,7 @@
       return '<li><label><input type="checkbox" data-k="' + id + '"><span>' + t + "</span></label></li>";
     }).join("") + "</ul>";
   }
-  function nut(s) { return s ? '<p class="nut">Est. per serve: ' + s + "</p>" : ""; }
+  function nut(s) { return s ? '<p class="nut"><span class="nut-l">Est. per serve</span>' + s.split(/\s*·\s*/).map(function (x) { return '<span class="nchip">' + x + "</span>"; }).join("") + "</p>" : ""; }
   function recipe(id, check) {
     var c = C[id];
     return '<article class="recipe"><h3>' + c.name + "</h3>" +
@@ -444,6 +444,10 @@
     var ex = e.target.closest("#rx-all"); if (ex) { var any = !!document.querySelector("#all-recipes .cx:not(.open)");
       [].forEach.call(document.querySelectorAll("#all-recipes .cx"), function (c) { cxOpen(c, any); }); ex.textContent = any ? "Collapse all" : "Expand all"; }
   });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-repeat]"); if (!b) return; var el = $("cx-" + b.dataset.repeat); if (!el) return;
+    if (!el.classList.contains("open")) cxOpen(el, true); el.scrollIntoView({ block: "start", behavior: "smooth" }); el.querySelector(".cx-h").focus({ preventScroll: true });
+  });
   function repeatList(id) {
     return Object.keys(W.repeat).map(function (g) { return '<h3 class="grp">' + g + "</h3>" + list(W.repeat[g], false); }).join("") +
       '<p><button type="button" class="btn" data-copy="' + id + '">Copy list</button></p>';
@@ -456,10 +460,15 @@
 
   function refParts() {
     // Kitchen
-    $("fridge").innerHTML = '<ul class="plain fridge">' + Object.keys(C).map(function (k) { var c = C[k];
-      var p = c.portion;
-      return '<li><div class="fr-top"><a href="#recipes/c-' + k + '">' + c.name + '</a><span class="muted">' + dayName[c.made] + " → " + c.keeps + "</span></div>" +
-        (p ? '<p class="fr-por">Batch ' + p.batch + " · " + p.n + " portions · " + (k === "eggs" ? "1 egg each" : amt(k, 1) + " each") + "</p>" : "") + "</li>"; }).join("") + "</ul>" +
+    var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], byId = {}; D.forEach(function (d) { byId[d.id] = d; });
+    var useBy = function (c) { var md = byId[c.made], w = DOW.indexOf(String(c.keeps).slice(0, 3)); if (!md || w < 0) return null;
+      var t = parse(md.date); do { t.setDate(t.getDate() + 1); } while (t.getDay() !== w); return iso(t); };
+    var daysTo = function (k) { if (!k) return 99; return Math.round((parse(k) - parse(todayIso)) / 864e5); };
+    var keys = Object.keys(C).sort(function (x, y) { return (useBy(C[x]) || "9") < (useBy(C[y]) || "9") ? -1 : (useBy(C[x]) || "9") > (useBy(C[y]) || "9") ? 1 : 0; });
+    $("fridge").innerHTML = '<ul class="plain fridge">' + keys.map(function (k) { var c = C[k], p = c.portion, n = daysTo(useBy(c)), first = n >= 0 && n <= 1;
+      return '<li' + (first ? ' class="use-first"' : "") + '><div class="fr-top"><span class="fr-name"><a href="#recipes/c-' + k + '">' + c.name.replace(" (Pestle)", "") + "</a>" + (/\(Pestle\)/.test(c.name) ? ' <span class="tag p">Pestle</span>' : "") + "</span>" +
+        '<span class="fr-keep">' + (first ? '<span class="use-tag">Use first</span>' : "") + "Keeps to " + c.keeps + "</span></div>" +
+        (p ? '<p class="fr-por">' + p.n + " portions · " + (k === "eggs" ? "1 egg each" : amt(k, 1) + " each") + '</p><p class="fr-batch">Batch ' + p.batch + " · made " + dayName[c.made] + "</p>" : "") + "</li>"; }).join("") + "</ul>" +
       '<p class="small muted">Easiest: divide each batch into its portions (or containers) when packing, so each meal is just grab-and-go. Portions are the same for Jade and Matteo; Matteo adds a little extra rice, pasta or toast.</p>';
     $("freezer").innerHTML = list(W.freezer, false);
     var main = D.filter(function (d) { return d.grocery && !Array.isArray(d.grocery) && d.grocery.type === "main"; })[0];
@@ -467,17 +476,25 @@
       (main ? tickBox(main.id + ":grocery", "grocery plainbox", main.grocery.title + ' <span class="tag">' + main.label + "</span>", main.grocery.items, "Big shop done. Next week\u2019s sorted!") : "") +
       cx("repeat-k", '<span class="cx-t">Repeat this week: full shopping list</span>', repeatList("k"), false);
     // Recipes
-    $("all-recipes").innerHTML = '<div class="rbar"><p class="small muted">Components are cooked on cook days; meals are 5-minute assemblies.</p><button type="button" class="linkbtn" id="rx-all">Expand all</button></div>' +
-      '<h2 class="grp">Components</h2>' + Object.keys(C).map(function (k) { var c = C[k];
+    $("all-recipes").innerHTML = '<p class="small muted rx-intro">Components are cooked on cook days; meals are 5-minute assemblies.</p>' +
+      '<div class="list-head"><h2 class="grp">Components</h2><button type="button" class="linkbtn" id="rx-all">Expand all</button></div>' + Object.keys(C).map(function (k) { var c = C[k];
         return cx("c-" + k, '<span class="cx-t">' + c.name.replace(" (Pestle)", "") + (/\(Pestle\)/.test(c.name) ? ' <span class="tag p">Pestle</span>' : "") + '</span><span class="cx-m">Cook ' + dayName[c.made] + " · " + c.serves + "</span>", recipe(k, false).replace(/<h3>.*?<\/h3>/, ""), false); }).join("") +
       '<h2 class="grp">Meals</h2>' + Object.keys(M).filter(function (k) { return k !== "birthday"; }).map(function (k) { var m = M[k];
         return cx("m-" + k, '<span class="cx-t">' + m.name + (isPestle(k) ? ' <span class="tag p">Pestle</span>' : "") + '</span><span class="cx-m">' + (m.time || "") + "</span>", meal("Meal", k).replace(/<h3>.*?<\/h3>/, ""), false); }).join("");
     // History
     var base2 = location.pathname.indexOf("/weeks/") > -1 ? "../" : "";
-    $("weeklist").innerHTML = (window.WEEKS || []).map(function (w) {
+    var WS = window.WEEKS || [];
+    $("weeklist").innerHTML = WS.map(function (w) {
       var curWeek = w.start === D[0].date;
-      return '<li><a href="' + base2 + w.file + '#today"><b>' + w.range + "</b>" + (curWeek ? " (this week)" : "") + "<span>" + w.summary + "</span></a></li>"; }).join("");
-    $("repeat").innerHTML = cx("repeat-h", '<span class="cx-t">Repeat this week: full shopping list</span>', repeatList("h"), false);
+      var chips = curWeek ? Object.keys(C).map(function (k) { return short(k).replace(/ \(.*$/, ""); }) : String(w.summary || "").replace(/\.$/, "").split(/[,;+]\s*/);
+      chips = chips.map(function (x) { return x.replace(/^\w+:\s*/, "").trim(); }).filter(Boolean);
+      var more = chips.length > 4 ? chips.length - 4 : 0;
+      return '<li class="wk-card"><div class="wk-card-h"><a href="' + base2 + w.file + '#today"><b>' + w.range.replace(/\s\d{4}$/, "") + "</b></a>" + (curWeek ? '<span class="day-tag now">This week</span>' : "") + "</div>" +
+        '<p class="wk-chips">' + chips.slice(0, 4).map(function (c) { return '<span class="chip">' + esc(c) + "</span>"; }).join("") + (more ? '<span class="chip more">+' + more + " more</span>" : "") + "</p>" +
+        '<div class="wk-acts">' + (curWeek ? '<button type="button" class="btn" data-repeat="repeat-h">Repeat this week</button>' : '<a class="btn" href="' + base2 + w.file + '#history">Repeat this week</a>') +
+        '<a class="linkbtn" href="' + base2 + w.file + '#week">See the plan</a></div></li>'; }).join("") +
+      (WS.length < 2 ? '<li class="wk-empty">Past weeks will collect here as you go, ready to repeat.</li>' : "");
+    $("repeat").innerHTML = cx("repeat-h", '<span class="cx-t">Full shopping list to repeat this week</span>', repeatList("h"), false);
     $("targets").textContent = W.targets + " All nutrition figures are estimates.";
   }
 

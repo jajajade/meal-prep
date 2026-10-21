@@ -683,3 +683,46 @@ html{scroll-padding-top:calc(var(--top-h,140px) + 12px);scroll-behavior:auto}
   .wt-slot{display:none!important}
   .wt .cx-t{font-size:1.08rem;text-wrap:balance}
 }
+/* 10. Kitchen: sorted by use-by, "Use first" flag, quieter batch details */
+.fr-top{align-items:baseline}
+.fr-name{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;min-width:0}
+.fr-keep{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-size:.88rem;color:var(--mute)}
+.use-tag{font:700 .72rem var(--text);letter-spacing:.04em;color:#fff;background:var(--acc);padding:2px 8px;border-radius:999px}
+.use-first .fr-keep{color:var(--ink);font-weight:700}
+.fr-por{font-size:.95rem!important;color:var(--ink)!important;margin:4px 0 0}
+.fr-batch{margin:2px 0 0;font-size:.82rem;color:var(--mute)}
+.fridge li::before{display:none!important}.fridge li{padding-left:0!important}
+/* 9. History: week cards with a clear primary action */
+.archive{display:grid;gap:12px;margin:8px 0 16px}
+.archive li.wk-card{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:16px}
+.wk-card-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.archive .wk-card-h a{display:inline;padding:0;color:var(--ink)}
+.archive .wk-card-h b{font-size:1.35rem}
+.wk-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}
+.chip{font-size:.85rem;padding:3px 10px;border-radius:999px;background:var(--chip);color:var(--ink)}
+.chip.more{background:none;color:var(--mute);padding-left:2px}
+.wk-acts{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.wk-acts .btn{text-decoration:none}
+.wk-acts .linkbtn{display:inline-flex;align-items:center;text-decoration:underline}
+.archive li.wk-empty{border:0;color:var(--mute);font-size:.92rem;padding:4px 2px}
+body[data-view="history"] #targets{display:none}
+/* 11. Recipes header, matched list sizes, nutrition chips, brand eyebrow everywhere */
+.rx-intro{margin:0 0 4px}
+.list-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 2px}
+.list-head h2.grp{margin:0!important}
+.list-head .linkbtn{white-space:nowrap;font-size:.9rem;min-height:44px}
+.meal ul.plain,.meal ul.uses,.recipe ul.plain,.cx ul.plain{font-size:1rem}
+ol.quick,.recipe ol{padding-left:22px}
+ol.quick li,.recipe ol li{padding-left:2px}
+.nut{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 0!important}
+.nut-l{font-size:.8rem;color:var(--mute);margin-right:2px}
+.nchip{font-size:.8rem;font-weight:700;color:var(--ink);background:var(--chip);padding:2px 9px;border-radius:999px}
+.wm-small{color:var(--mute)!important}
+@media (max-width:767px){.wm-small{display:block;font-size:.6rem;letter-spacing:.14em}.wm-big{margin-top:2px}}
+/* 12. Fewer shouty eyebrows, hairlines instead of heavy rules */
+h4,.uses-h,.grp,h2.grp,h3.grp{text-transform:none!important;letter-spacing:0!important;color:var(--ink)!important;font-size:.95rem!important;font-weight:700}
+h2.grp{font-family:var(--display)!important;font-weight:400!important;font-size:1.35rem!important}
+.block{border-top:0!important;padding-top:0;margin-top:8px}
+.block > h2{margin-top:24px}
+#v-kitchen > h1 + .block > h2{margin-top:4px}
+.ov-day{background:none}
