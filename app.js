@@ -399,8 +399,9 @@
   }
 
   function staticParts() {
+    var nw = new Date(), td = nw.getFullYear() + "-" + ("0" + (nw.getMonth() + 1)).slice(-2) + "-" + ("0" + nw.getDate()).slice(-2);
     $("days").innerHTML = D.map(function (d, i) {
-      return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.cook ? '<i>cook</i>' : "") + (freshDay(d) ? '<em class="fdot" title="Cooking fresh tonight"></em>' : "") + "</a>";
+      return '<a href="#today/' + d.id + '" data-i="' + i + '" aria-current="false"' + (d.date < td ? ' class="past"' : "") + '><span>' + d.label + "</span><b>" + d.num + "</b>" + (d.cook ? '<i>cook</i>' : "") + (freshDay(d) ? '<em class="fdot" title="Cooking fresh tonight"></em>' : "") + "</a>";
     }).join("");
   }
 

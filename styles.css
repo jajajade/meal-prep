@@ -598,3 +598,8 @@ ul.uses li::before,.meal ul.plain li::before,.recipe ul.plain li::before,.cx ul.
 .cal-key .k.plan{color:var(--ink)}
 .cal-key .k.today{background:var(--ink);color:var(--bg)}
 .cal-key .k.cook{width:6px;height:6px;background:var(--acc)}
+
+/* Past days in the date strip */
+.days a.past{opacity:.4}
+.days a.past span,.days a.past b{text-decoration:line-through;text-decoration-thickness:1.5px}
+.days a.past[aria-current=true]{opacity:1}
