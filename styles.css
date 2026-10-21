@@ -603,3 +603,4 @@ ul.uses li::before,.meal ul.plain li::before,.recipe ul.plain li::before,.cx ul.
 .days a.past{opacity:.4}
 .days a.past span,.days a.past b{text-decoration:line-through;text-decoration-thickness:1.5px}
 .days a.past[aria-current=true]{opacity:1}
+.cal-key .k.cook{flex:none;width:6px!important;height:6px!important;min-height:0;padding:0;border-radius:50%}
