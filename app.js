@@ -80,7 +80,7 @@
     var g = d.grocery;
     if (g) { if (Array.isArray(g)) g = { type: "topup", title: "Groceries", items: g };
       if (g.items.length) h += tickBox(d.id + ":grocery", "grocery", BAG + "Groceries" + (g.title ? '<span class="tb-sub">' + g.title + "</span>" : ""), g.items,
-        g.type === "main" ? "Big shop done. Next week\u2019s sorted!" : "Shopping sorted. Nice one!"); }
+        g.type === "main" ? "Big shop done. Next week\u2019s sorted!" : "Shopping sorted. Nice one!", true); }
     if (d.nightBefore && d.nightBefore.length) h += tickBox("nb:" + W.range + d.id, "nightb", MOON + "Tonight, for tomorrow\u2019s cook", d.nightBefore, "Ready for tomorrow\u2019s cook. Nice!");
     var meals = '<section><h2>Today\u2019s meals</h2>' + meal("Breakfast", d.b, null, d.id + "-b") + meal("Lunch", d.l, null, d.id + "-l") + meal("Dinner", d.d, d.dAlt, d.id + "-d", dinnerMode(d) === "merged") +
       '<div class="meal"><p class="slot">Snacks</p><p>' + W.snacks + "</p></div></section>";
@@ -405,11 +405,16 @@
   function tbk(id, i) { return id.indexOf("nb:") === 0 ? id + "-" + i : "tb:" + W.range + ":" + id + ":" + i; }
   function tbAll(id, n) { for (var i = 0; i < n; i++) if (lsGet(tbk(id, i), "0") !== "1") return false; return true; }
   var TICK = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  function tickBox(id, cls, title, items, msg) {
-    var done = tbAll(id, items.length), open = !done || lsGet("tbopen:" + W.range + ":" + id, "0") === "1";
-    return '<div class="tb ' + cls + (done ? " is-done" : "") + (open ? "" : " collapsed") + '" data-tb="' + id + '" data-n="' + items.length + '">' +
-      '<button type="button" class="tb-bar" aria-expanded="' + open + '"' + (done ? "" : " hidden") + ">" + TICK + '<span class="tb-msg">' + msg + '</span><span class="tb-a">' + (open ? "Hide" : "Show") + "</span>" + CHEV + "</button>" +
-      '<div class="tb-body"' + (open ? "" : " inert") + '><div class="rin"><strong class="tb-title">' + title + '</strong><ul class="check tb-list">' +
+  function tickBox(id, cls, title, items, msg, alwaysCollapsible) {
+    var done = tbAll(id, items.length);
+    var open = alwaysCollapsible ? (lsGet("tbopen:" + W.range + ":" + id, null) === null ? false : lsGet("tbopen:" + W.range + ":" + id, "0") === "1") : (!done || lsGet("tbopen:" + W.range + ":" + id, "0") === "1");
+    var showBar = alwaysCollapsible || done;
+    var doneIndicator = alwaysCollapsible && done ? ' <span class="tb-done-mark">' + TICK + '</span>' : '';
+    return '<div class="tb ' + cls + (done ? " is-done" : "") + (open ? "" : " collapsed") + (alwaysCollapsible ? " always-collapsible" : "") + '" data-tb="' + id + '" data-n="' + items.length + '">' +
+      '<button type="button" class="tb-bar" aria-expanded="' + open + '"' + (showBar ? "" : " hidden") + ">" + 
+      (alwaysCollapsible ? '<span class="tb-main-title">' + title + doneIndicator + '</span>' : TICK + '<span class="tb-msg">' + msg + '</span>') + 
+      '<span class="tb-a">' + (open ? "Hide" : "Show") + "</span>" + CHEV + "</button>" +
+      '<div class="tb-body"' + (open ? "" : " inert") + '>' + (alwaysCollapsible ? '<div class="rin"><ul class="check tb-list">' : '<div class="rin"><strong class="tb-title">' + title + '</strong><ul class="check tb-list">') +
       items.map(function (t, i) { var on = lsGet(tbk(id, i), "0") === "1";
         return '<li><label><input type="checkbox" data-tbk="' + i + '"' + (on ? " checked" : "") + "><span>" + t + "</span></label></li>"; }).join("") +
       "</ul></div></div></div>";
@@ -428,14 +433,30 @@
     [].forEach.call(document.querySelectorAll('[data-tb="' + id + '"] [data-tbk="' + cb.dataset.tbk + '"]'), function (x) { x.checked = cb.checked; });
     if (cb.checked) { li.classList.remove("tb-pop"); void li.offsetWidth; li.classList.add("tb-pop"); setTimeout(function () { li.classList.remove("tb-pop"); }, 500); }
     var all = tbAll(id, n);
+    var isAlwaysCollapsible = box.classList.contains("always-collapsible");
     if (cb.checked) toast(all ? "All done here. Nice!" : "Ticked off");
     [].forEach.call(document.querySelectorAll('[data-tb="' + id + '"]'), function (bx) {
       var bar = bx.querySelector(".tb-bar");
       if (all && !bx.classList.contains("is-done")) {
-        bx.classList.add("is-done"); bar.hidden = false;
+        bx.classList.add("is-done");
+        if (!isAlwaysCollapsible) bar.hidden = false;
         if (bx === box) celebrate(cb.nextElementSibling || cb, false, bx);
-        setTimeout(function () { tbOpen(bx, false); }, 600);
-      } else if (!all && bx.classList.contains("is-done")) { bx.classList.remove("is-done"); bar.hidden = true; tbOpen(bx, true); }
+        if (!isAlwaysCollapsible) setTimeout(function () { tbOpen(bx, false); }, 600);
+        else {
+          var existingMark = bar.querySelector(".tb-done-mark");
+          if (!existingMark) {
+            var titleSpan = bar.querySelector(".tb-main-title");
+            if (titleSpan) titleSpan.insertAdjacentHTML("beforeend", ' <span class="tb-done-mark">' + TICK + '</span>');
+          }
+        }
+      } else if (!all && bx.classList.contains("is-done")) {
+        bx.classList.remove("is-done");
+        if (!isAlwaysCollapsible) { bar.hidden = true; tbOpen(bx, true); }
+        else {
+          var mark = bar.querySelector(".tb-done-mark");
+          if (mark) mark.remove();
+        }
+      }
     });
   });
   document.addEventListener("click", function (e) { var b = e.target.closest(".tb-bar"); if (b) { var bx = b.closest("[data-tb]"); tbOpen(bx, bx.classList.contains("collapsed")); } });
@@ -546,8 +567,8 @@
       '<p class="small muted">Easiest: divide each batch into its portions (or containers) when packing, so each meal is just grab-and-go. Portions are the same for Jade and Matteo; Matteo adds a little extra rice, pasta or toast.</p>';
     $("freezer").innerHTML = list(W.freezer, false);
     var main = D.filter(function (d) { return d.grocery && !Array.isArray(d.grocery) && d.grocery.type === "main"; })[0];
-    $("topup").innerHTML = tickBox("shop:topup", "grocery plainbox", "Top-ups this week", W.topup, "Top-ups bought. Nice one!") +
-      (main ? tickBox(main.id + ":grocery", "grocery plainbox", main.grocery.title + ' <span class="tag">' + main.label + "</span>", main.grocery.items, "Big shop done. Next week\u2019s sorted!") : "") +
+    $("topup").innerHTML = tickBox("shop:topup", "grocery plainbox", "Top-ups this week", W.topup, "Top-ups bought. Nice one!", true) +
+      (main ? tickBox(main.id + ":grocery", "grocery plainbox", main.grocery.title + ' <span class="tag">' + main.label + "</span>", main.grocery.items, "Big shop done. Next week\u2019s sorted!", true) : "") +
       cx("repeat-k", '<span class="cx-t">Repeat this week: full shopping list</span>', repeatList("k"), false);
     // Recipes
     $("all-recipes").innerHTML = '<p class="small muted rx-intro">Components are cooked on cook days; meals are 5-minute assemblies.</p>' +

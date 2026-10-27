@@ -275,6 +275,10 @@ body:not([data-view="today"]) .days{display:none}
 .tb-bar,.cookbar{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:12px 16px;margin:0;border:0;border-radius:14px;
   background:var(--herb-bg);color:var(--ink);font:700 1rem "Atkinson Hyperlegible",system-ui,sans-serif;text-align:left;cursor:pointer}
 .tb-bar:hover,.cookbar:hover{background:#d5e3d0}
+.always-collapsible .tb-bar{background:transparent;padding:14px 0;border-radius:0;justify-content:space-between}
+.always-collapsible .tb-bar:hover{background:transparent}
+.always-collapsible .tb-bar:hover .tb-a{text-decoration:underline;text-underline-offset:3px}
+.always-collapsible .tb-bar .tb-a{color:var(--mute)}
 .tb-msg,.cb-t{flex:1;color:var(--ink)}
 .tb-a,.cb-a{font-size:.9rem;font-weight:700;color:var(--herb);text-decoration:none}
 .tb-bar svg:first-child,.cookbar svg:first-child{flex:none;width:24px;height:24px;padding:3px;border-radius:50%;background:var(--herb);color:#fff}
@@ -297,6 +301,12 @@ body:not([data-view="today"]) .days{display:none}
 .tb .rin{padding:14px 16px 8px}
 .tb-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:1rem}
 .tb-title .ic,.tb-title svg{flex:none}
+.always-collapsible{border-top:1px solid var(--line)!important;margin:0}
+.always-collapsible .tb-body{padding-top:0}
+.always-collapsible .tb-bar{font-size:1.02rem}
+.always-collapsible.is-done .tb-bar svg:first-child{display:none}
+.tb-main-title{flex:1;display:flex;align-items:center;gap:8px}
+.tb-done-mark{display:inline-flex;color:var(--herb)}
 .remind.tb{background:var(--stone-bg)}
 .remind.tb .tb-title,.remind strong{color:var(--stone)}
 .grocery.tb{background:var(--herb-bg)}
